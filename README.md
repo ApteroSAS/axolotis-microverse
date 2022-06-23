@@ -22,21 +22,21 @@ The source code and assets in this repository are licensed under Apache License 
 
 ## Documentation
 
-The documentation for the Croquet Microverse is located in the [docs](./docs) directory.
+The documentation for the Croquet Microverse is located in the [docs](meta/docs) directory.
 
-* [docs/QuickStart.md](./docs/QuickStart.md) - Quick Start guide to Microverse IDE
-* [docs/Development.md](./docs/Development.md) - Development Guide on building Microverses
-* [docs/Card.md](./docs/Card.md) - The methods and properties of the Card classes.
-* [docs/Avatar.md](./docs/Avatar.md) - The methods and properties of the Avatar classes.
-* [docs/CardSpec.md](./docs/CardSpec.md) - Specification for Microverse Cards
-* [docs/Elected.md](./docs/Elected.md) - The Election mechanism to choose a peer.
-* [docs/Rapier.md](./docs/Rapier.md) - Using the Rapier Physics Engine in Microverses
-* [docs/Tutorial.md](./docs/Tutorial.md) - The introduction to tutorials
-* [docs/Tutorial1.md](./docs/Tutorial1.md) - The tutorial part 1.
-* [docs/Tutorial1.md](./docs/Tutorial2.md) - The tutorial part 2.
+* [docs/QuickStart.md](meta/docs/QuickStart.md) - Quick Start guide to Microverse IDE
+* [docs/Development.md](meta/docs/Development.md) - Development Guide on building Microverses
+* [docs/Card.md](meta/docs/Card.md) - The methods and properties of the Card classes.
+* [docs/Avatar.md](meta/docs/Avatar.md) - The methods and properties of the Avatar classes.
+* [docs/CardSpec.md](meta/docs/CardSpec.md) - Specification for Microverse Cards
+* [docs/Elected.md](meta/docs/Elected.md) - The Election mechanism to choose a peer.
+* [docs/Rapier.md](meta/docs/Rapier.md) - Using the Rapier Physics Engine in Microverses
+* [docs/Tutorial.md](meta/docs/Tutorial.md) - The introduction to tutorials
+* [docs/Tutorial1.md](meta/docs/Tutorial1.md) - The tutorial part 1.
+* [docs/Tutorial1.md](meta/docs/Tutorial2.md) - The tutorial part 2.
 
 ## Installation
-Please refer to the [docs/QuickStart.md](./docs/QuickStart.md) to get started.
+Please refer to the [docs/QuickStart.md](meta/docs/QuickStart.md) to get started.
 
 If you just want to try it out quickly, follow these steps:
 

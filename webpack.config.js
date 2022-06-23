@@ -6,7 +6,7 @@ const webpack = require("webpack");
 
 const config = {
     entry: {
-        'index': './index.js'
+        'index': './src/page/index.js'
     },
     output: {
         path: path.join(__dirname, 'dist'),
@@ -40,7 +40,7 @@ const config = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: 'index.html',   // input
+            template: './src/page/index.html',   // input
             filename: 'index.html',   // output filename in dist/
             minify: false,
             chunks: ['index']
