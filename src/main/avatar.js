@@ -15,6 +15,7 @@ import {PM_Pointer} from "./Pointer.js";
 import {CardActor, CardPawn} from "./card.js";
 
 import {setupWorldMenuButton} from "./worldMenu.js";
+import Cookies from "js-cookie";
 
 const EYE_HEIGHT = 1.676;
 // const EYE_EPSILON = 0.01;
@@ -568,15 +569,23 @@ export class AvatarPawn extends mix(CardPawn).with(PM_Player, PM_SmoothedDriver,
         if(document.getElementById("homeBttn")) {
             document.getElementById("homeBttn").onclick = () => this.goHome();
         }
+        window.goHome= ()=>{
+            this.goHome();
+        }
         if(document.getElementById("usersComeHereBttn")) {
             document.getElementById("usersComeHereBttn").onclick = () => this.comeToMe();
         }
-        document.getElementById("editModeBttn").setAttribute("mobile", isMobile);
-        document.getElementById("editModeBttn").setAttribute("pressed", false);
+        window.comeToMe= ()=>{
+            this.comeToMe();
+        }
 
-        let editButton = document.getElementById("editModeBttn");
-        editButton.onpointerdown = (evt) => this.setEditMode(evt);
-        editButton.onpointerup = (evt) => this.clearEditMode(evt);
+        if(document.getElementById("editModeBttn")) {
+            document.getElementById("editModeBttn").setAttribute("mobile", isMobile);
+            document.getElementById("editModeBttn").setAttribute("pressed", false);
+            let editButton = document.getElementById("editModeBttn");
+            editButton.onpointerdown = (evt) => this.setEditMode(evt);
+            editButton.onpointerup = (evt) => this.clearEditMode(evt);
+        }
 
         setupWorldMenuButton(this, App, this.sessionId);
 
@@ -785,10 +794,12 @@ export class AvatarPawn extends mix(CardPawn).with(PM_Player, PM_SmoothedDriver,
     }
 
     setEditMode(evt) {
-        evt.target.setAttribute("pressed", true);
-        evt.target.setPointerCapture(evt.pointerId);
-        evt.stopPropagation();
-        this.service("InputManager").setModifierKeys({ctrlKey: true});
+        if(Cookies.get('admin')==="true") {
+            evt.target.setAttribute("pressed", true);
+            evt.target.setPointerCapture(evt.pointerId);
+            evt.stopPropagation();
+            this.service("InputManager").setModifierKeys({ctrlKey: true});
+        }
     }
 
     clearEditMode(evt) {
@@ -1282,24 +1293,36 @@ export class AvatarPawn extends mix(CardPawn).with(PM_Player, PM_SmoothedDriver,
             case 'Tab':
                 this.jumpToNote(e); break;
             case 'w': case 'W': // forward
+            case 'z': case 'Z': // forward
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'ArrowDown':
+            case 'ArrowRight':
             case 'a': case 'A': // left strafe
+            case 'q': case 'Q': // left strafe
             case 'd': case 'D': // right strafe
             case 's': case 'S': // backward
                 this.yawDirection = -2;
                 this.wasdMap[e.key.toLowerCase()] = true;
                 switch (e.key) {
+                    case 'z': case 'Z': // forward
+                    case 'ArrowUp':
                     case 'w': case 'W': // forward
                         nw = w[2] === KEY_V ? 0 : -KEY_V;
                         this.wasdVelocity = [w[0], w[1], nw];
                         break;
+                    case 'ArrowLeft':
+                    case 'q': case 'Q': // left strafe
                     case 'a': case 'A': // left strafe
                         nw = w[0] === KEY_V ? 0 : -KEY_V;
                         this.wasdVelocity = [nw, w[1], w[2]];
                         break;
+                    case 'ArrowRight':
                     case 'd': case 'D': // right strafe
                         nw = w[0] === -KEY_V ? 0 : KEY_V;
                         this.wasdVelocity = [nw, w[1], w[2]];
                         break;
+                    case 'ArrowDown':
                     case 's': case 'S': // backward
                         nw = w[2] === -KEY_V ? 0 : KEY_V;
                         this.wasdVelocity = [w[0], w[1], nw];
@@ -1345,7 +1368,13 @@ export class AvatarPawn extends mix(CardPawn).with(PM_Player, PM_SmoothedDriver,
     keyUp(e) {
         switch(e.key) {
             case 'w': case 'W': // forward
+            case 'z': case 'Z': // forward
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'ArrowDown':
+            case 'ArrowRight':
             case 'a': case 'A': // left strafe
+            case 'q': case 'Q': // left strafe
             case 'd': case 'D': // right strafe
             case 's': case 'S': // backward
                 this.yawDirection = -1;
@@ -1394,7 +1423,7 @@ export class AvatarPawn extends mix(CardPawn).with(PM_Player, PM_SmoothedDriver,
     }
 
     pointerDown(e) {
-        if (e.ctrlKey) { // should be the first responder case
+        if (e.ctrlKey && Cookies.get('admin')==="true") { // should be the first responder case
             const render = this.service("ThreeRenderManager");
             const rc = this.pointerRaycast(e.xy, render.threeLayerUnion('pointer'));
             this.targetDistance = rc.distance;

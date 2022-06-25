@@ -90,7 +90,7 @@ function basenames() {
     let basename = new URL(window.location).searchParams.get("world");
 
     if (!basename) {
-        basename = (!match || match[1] === "index") ? "default" : match[1];
+        basename = (!match || match[1] === "room") ? "default" : match[1];
     }
 
     let basedir;

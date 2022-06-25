@@ -1,3 +1,4 @@
+import Cookies from 'js-cookie'
 let worldMenu = null;
 let worldMenuVisible = false;
 let imageInput = null;
@@ -94,7 +95,8 @@ function initWorldMenu(badge) {
     badge.id = "worldMenu-qr";
     badge.classList.add("menu-qr", "menu-item");
 
-    let buttons = `
+    if(Cookies.get('admin')==="true") {
+        let buttons = `
 <div id="worldMenu-save" class="menu-label menu-item">
     <span class="menu-label-text">Save</span>
     <div class="menu-icon save-icon"></div>
@@ -106,18 +108,62 @@ function initWorldMenu(badge) {
 <div id="worldMenu-connect" class="menu-label menu-item">
     <span class="menu-label-text">Connect</span>
     <div class="menu-icon connect-icon"></div>
-</div>`.trim();
+</div>
+<div id="worldMenu-full" class="menu-label menu-item">
+    <span class="menu-label-text">FullScreen</span>
+    <div class="menu-icon connect-icon"></div>
+</div>
+<div id="worldMenu-start" class="menu-label menu-item">
+    <span class="menu-label-text">Start</span>
+    <div class="menu-icon connect-icon"></div>
+</div>
+<div id="worldMenu-comes" class="menu-label menu-item">
+    <span class="menu-label-text">Comes Here</span>
+    <div class="menu-icon connect-icon"></div>
+</div>
+`.trim();
 
-    let div = document.createElement("div");
-    div.innerHTML = buttons;
+        let div = document.createElement("div");
+        div.innerHTML = buttons;
 
-    let save = div.querySelector("#worldMenu-save");
-    let load = div.querySelector("#worldMenu-load");
-    let connect = div.querySelector("#worldMenu-connect");
+        let save = div.querySelector("#worldMenu-save");
+        let load = div.querySelector("#worldMenu-load");
+        let connect = div.querySelector("#worldMenu-connect");
+        let userscomes = div.querySelector("#worldMenu-comes");
+        let fullscreen = div.querySelector("#worldMenu-full");
+        let start = div.querySelector("#worldMenu-start");
 
-    html.appendChild(save);
-    html.appendChild(load);
-    html.appendChild(connect);
+        html.appendChild(save);
+        html.appendChild(load);
+        html.appendChild(connect);
+        html.appendChild(userscomes);
+        html.appendChild(fullscreen);
+        html.appendChild(start);
+    }else{
+        let buttons = `
+        <div id="worldMenu-comes" class="menu-label menu-item">
+            <span class="menu-label-text">Comes Here</span>
+            <div class="menu-icon connect-icon"></div>
+        </div>
+        <div id="worldMenu-full" class="menu-label menu-item">
+            <span class="menu-label-text">FullScreen</span>
+            <div class="menu-icon connect-icon"></div>
+        </div>
+        <div id="worldMenu-start" class="menu-label menu-item">
+            <span class="menu-label-text">Start</span>
+            <div class="menu-icon connect-icon"></div>
+        </div>
+            `.trim();
+
+        let div = document.createElement("div");
+        div.innerHTML = buttons;
+        let userscomes = div.querySelector("#worldMenu-comes");
+        let fullscreen = div.querySelector("#worldMenu-full");
+        let start = div.querySelector("#worldMenu-start");
+        html.appendChild(userscomes);
+        html.appendChild(fullscreen);
+        html.appendChild(start);
+    }
 
     worldMenu = html;
     worldMenuVisible = false;
@@ -160,26 +206,48 @@ function toggleMenu(myAvatar) {
         qrPressed(myAvatar, window.location);
     }
 
-    div = worldMenu.querySelector("#worldMenu-save");
+    if(Cookies.get('admin')==="true") {
+        div = worldMenu.querySelector("#worldMenu-save");
+        div.onclick = (evt) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            savePressed(myAvatar);
+        }
+
+        div = worldMenu.querySelector("#worldMenu-load");
+        div.onclick = (evt) => {
+            evt.preventDefault();
+            evt.stopPropagation();
+            loadPressed(myAvatar);
+        }
+
+        div = worldMenu.querySelector("#worldMenu-connect");
+        div.onclick = () => connectPressed(myAvatar);
+
+        div = worldMenu.querySelector("#worldMenu-forceStop");
+        if (div) {
+            div.onclick = () => forceStop(myAvatar);
+        }
+    }
+
+    /*div = worldMenu.querySelector("#worldMenu-full");
     div.onclick = (evt) => {
         evt.preventDefault();
         evt.stopPropagation();
-        savePressed(myAvatar);
-    }
+        alert("fullscreen")
+    }*/
 
-    div = worldMenu.querySelector("#worldMenu-load");
+    div = worldMenu.querySelector("#worldMenu-comes");
     div.onclick = (evt) => {
         evt.preventDefault();
         evt.stopPropagation();
-        loadPressed(myAvatar);
+        window.comeToMe();
     }
-
-    div = worldMenu.querySelector("#worldMenu-connect");
-    div.onclick = () => connectPressed(myAvatar);
-
-    div = worldMenu.querySelector("#worldMenu-forceStop");
-    if (div) {
-        div.onclick = () => forceStop(myAvatar);
+    div = worldMenu.querySelector("#worldMenu-start");
+    div.onclick = (evt) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        window.goHome();
     }
 
     worldMenuVisible = true;

@@ -147,7 +147,7 @@ Of course you can modify the actual executable dynamically as well. This makes d
 You can easily add a new file in the watched directory (by default `behaviors/default/` or your own behaviors directory), and if the file follows the standard behavior structure of other files, it will be automatically available.
 
 ### 6. Make Your Own New World
-You can add a new file in the "worlds" directory (copying default.js or test.js is an easy way). If you start microverse with ?world=worldFileName, the file at `worlds/worldFileName.js` is used to start the world.
+You can add a new file in the "worlds" directory (copying default.js or default.js is an easy way). If you start microverse with ?world=worldFileName, the file at `worlds/worldFileName.js` is used to start the world.
 
 ## Worlds, Cards and Behaviors
 ---

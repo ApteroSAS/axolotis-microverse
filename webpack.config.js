@@ -6,7 +6,9 @@ const webpack = require("webpack");
 
 const config = {
     entry: {
-        'index': './src/page/index.js'
+        'index': './src/page/index.js',
+        'admin': './src/page/admin.js',
+        'room': './src/page/room.js'
     },
     output: {
         path: path.join(__dirname, 'dist'),
@@ -44,6 +46,18 @@ const config = {
             filename: 'index.html',   // output filename in dist/
             minify: false,
             chunks: ['index']
+        }),
+        new HtmlWebpackPlugin({
+            template: './src/page/room.html',   // input
+            filename: 'room.html',   // output filename in dist/
+            minify: false,
+            chunks: ['room']
+        }),
+        new HtmlWebpackPlugin({
+            template: './src/page/admin.html',   // input
+            filename: 'admin.html',   // output filename in dist/
+            minify: false,
+            chunks: ['admin']
         }),
         new webpack.ProvidePlugin({
             Buffer: ['buffer', 'Buffer']
