@@ -110,7 +110,7 @@ module.exports = (env, argv) => {
         config.plugins.push(
             new CopyPlugin({
                 patterns: [
-                    { from: 'apiKey.js', to: 'apiKey.js' }
+                    { from: 'apiKey.js', to: 'apiKey.js', noErrorOnMissing: true },
                 ]
             })
         );
