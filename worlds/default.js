@@ -7,11 +7,7 @@ export function init(Constants) {
         "newwhite"
     ];
 
-    Constants.SystemBehaviorDirectory = "behaviors/croquet";
-    Constants.SystemBehaviorModules = [
-        "menu.js", "elected.js", "propertySheet.js", "stickyNote.js", "rapier.js", "avatarEvents.js", "pdfview.js", "singleUser.js", "scrollableArea.js"
-    ];
-
+        "menu.js", "elected.js", "propertySheet.js", "stickyNote.js", "rapier.js", "avatarEvents.js", "pdfview.js", "scrollableArea.js"
     Constants.UserBehaviorDirectory = "behaviors";
     Constants.UserBehaviorModules = [
         //"default/demo.js", "default/flightTracker.js", "default/spin.js", "default/lights.js", "default/slides.js", "default/cascade.js",
