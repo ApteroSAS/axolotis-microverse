@@ -1,6 +1,6 @@
 {
   "name": "@aptero/microverse",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "Microverse",
   "main": "src/page/index.js",
   "private": true,
