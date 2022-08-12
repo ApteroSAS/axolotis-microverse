@@ -19,6 +19,7 @@ export function init(Constants) {
     Constants.UseRapier = true;
 
     Constants.DefaultCards = [    ];
+                translation: [12, 0.6, -10],
                 name: "auggie stand",
                 translation: [7.77, -1.72, -14.7],
                 // rotation: [0, 0, 0, 1],
@@ -68,4 +69,5 @@ export function init(Constants) {
             },*/
         {
             card: {
+                translation: [12, 0.6, 11],
 }
