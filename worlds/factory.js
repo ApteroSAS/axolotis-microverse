@@ -403,7 +403,7 @@ export function init(Constants) {
             card: {
                 name: "rearrange",
                 type: "object",
-                translation: [7.490278792379745, 3.0868207143861564, 41.84439119032765],
+                translation: [7.245116172748017, 3.2067974079409365, 42.0089577998846],
                 behaviorModules: ["RearrangeButton"]
             }
         },
