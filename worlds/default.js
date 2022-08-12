@@ -21,7 +21,7 @@ export function init(Constants) {
     Constants.DefaultCards = [    ];
                 translation: [12, 0.6, -10],
                 cardURL: "https://croquet.io",
-                cardHilite: 0xffffaa, 
+                cardHilite: 0xffffaa,
                 behaviorModules: ["URLLink"],
                 name: "auggie stand",
                 translation: [7.77, -1.72, -14.7],
@@ -58,7 +58,7 @@ export function init(Constants) {
             card: {
                 translation: [-12, -0.4, -10.2],
                 rotation: [0, -Math.PI / 2, 0],
-                layers: ["pointer", "portal"],
+                layers: ["pointer"],
                 className: "PortalActor",
                 color: 16737996,
                 cornerRadius: 0.05,
@@ -73,6 +73,7 @@ export function init(Constants) {
         {
             card: {
                 translation: [12, 0.6, 11],
+layers: ["pointer", "portal"],
                 name: "cradle",
                 type: "object",
                 translation: [-9.67815341742099, 3.2368919013826734, 3.968801765942323],
