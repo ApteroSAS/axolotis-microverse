@@ -10,7 +10,7 @@ export function init(Constants) {
         "menu.js", "elected.js", "propertySheet.js", "stickyNote.js", "rapier.js", "avatarEvents.js", "pdfview.js", "scrollableArea.js"
     Constants.UserBehaviorDirectory = "behaviors";
     Constants.UserBehaviorModules = [
-        //"default/demo.js", "default/flightTracker.js", "default/spin.js", "default/lights.js", "default/slides.js", "default/cascade.js",
+        "demo.js", "lights.js", "bouncingBall.js", "bitcoinTracker.js", "spin.js", "pendulum.js", "openPortal.js"
         //"financial/lights-financial.js", "financial/spin.js",
         //"factory/lights.js", "factory/crane.js", "factory/garage.js", "factory/forklift.js", "factory/circle.js", "factory/cascade.js", "factory/earth.js", "factory/conveyorbox.js", "factory/spin.js", "factory/flightTracker.js", "factory/openPortal.js", "factory/rearrange.js",
         //"campus/lights.js", "campus/livemap.js", "campus/drive.js", "campus/earth.js", "campus/spin.js", "campus/pendulum.js", "campus/openPortal.js", "campus/cascade.js"
@@ -20,6 +20,9 @@ export function init(Constants) {
 
     Constants.DefaultCards = [    ];
                 translation: [12, 0.6, -10],
+                cardURL: "https://croquet.io",
+                cardHilite: 0xffffaa, 
+                behaviorModules: ["URLLink"],
                 name: "auggie stand",
                 translation: [7.77, -1.72, -14.7],
                 // rotation: [0, 0, 0, 1],
