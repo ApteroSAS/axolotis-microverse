@@ -3,7 +3,7 @@
 // info@croquet.io
 
 import { GetPawn } from "@croquet/worldcore-kernel";
-import { THREE } from "./ThreeRender.js";
+import { THREE } from "../ThreeRender.js";
 
 import { CardActor, CardPawn } from "./card.js";
 import { addShellListener, removeShellListener, sendToShell, frameName, isPrimaryFrame } from "./frame.js";
