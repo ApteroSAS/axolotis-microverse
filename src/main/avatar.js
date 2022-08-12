@@ -14,7 +14,7 @@ import { frameName, isPrimaryFrame, addShellListener, removeShellListener, sendT
 import {PM_Pointer} from "./Pointer.js";
 import {CardActor, CardPawn} from "./card.js";
 
-import {setupWorldMenuButton} from "./worldMenu.js";
+import {setupWorldMenuButton, filterDomEventsOn} from "./worldMenu.js";
 import Cookies from "js-cookie";
 
 const EYE_HEIGHT = 1.676;
@@ -580,14 +580,12 @@ export class AvatarPawn extends mix(CardPawn).with(PM_Player, PM_SmoothedDriver,
         window.goHome= ()=>{
             this.goHome();
         }
-        if(document.getElementById("usersComeHereBttn")) {
             document.getElementById("usersComeHereBttn").onclick = () => this.comeToMe();
         }
         window.comeToMe= ()=>{
             this.comeToMe();
         }
 
-        if(document.getElementById("editModeBttn")) {
         document.getElementById("editModeBttn").setAttribute("mobile", this.isMobile);
             document.getElementById("editModeBttn").setAttribute("pressed", false);
             let editButton = document.getElementById("editModeBttn");

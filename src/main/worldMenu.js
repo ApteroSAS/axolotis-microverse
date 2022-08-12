@@ -166,6 +166,7 @@ function initWorldMenu(badge) {
     }
 
     worldMenu = html;
+    filterDomEventsOn(worldMenu);
     worldMenuVisible = false;
     document.getElementById("hud").appendChild(worldMenu);
 }
@@ -277,6 +278,13 @@ export function setupWorldMenuButton(myAvatar, App, sessionId) {
 
         initWorldMenu(ownerDiv);
     }
-    let worldMenuButton = document.querySelector("#worldMenuBttn");
-    worldMenuButton.onclick = () => toggleMenu(myAvatar);
+    let worldMenuBttn = document.querySelector("#worldMenuBttn");
+    worldMenuBttn.onclick = () => toggleMenu(myAvatar);
+    filterDomEventsOn(worldMenuBttn);
+}
+
+export function filterDomEventsOn(elem) {
+    elem.onpointerdown = (evt) => evt.stopPropagation();
+    elem.onpointerup = (evt) => evt.stopPropagation();
+    elem.onpointermove = (evt) => evt.stopPropagation();
 }
