@@ -10,7 +10,7 @@ export function init(Constants) {
         "menu.js", "elected.js", "propertySheet.js", "stickyNote.js", "rapier.js", "avatarEvents.js", "pdfview.js", "scrollableArea.js"
     Constants.UserBehaviorDirectory = "behaviors";
     Constants.UserBehaviorModules = [
-        "demo.js", "lights.js", "bouncingBall.js", "bitcoinTracker.js", "spin.js", "pendulum.js", "openPortal.js"
+        "demo.js", "lights.js", "bouncingBall.js", "bitcoinTracker.js", "spin.js", "pendulum.js", "openPortal.js", "urlLink.js"
         //"financial/lights-financial.js", "financial/spin.js",
         //"factory/lights.js", "factory/crane.js", "factory/garage.js", "factory/forklift.js", "factory/circle.js", "factory/cascade.js", "factory/earth.js", "factory/conveyorbox.js", "factory/spin.js", "factory/flightTracker.js", "factory/openPortal.js", "factory/rearrange.js",
         //"campus/lights.js", "campus/livemap.js", "campus/drive.js", "campus/earth.js", "campus/spin.js", "campus/pendulum.js", "campus/openPortal.js", "campus/cascade.js"
@@ -73,4 +73,15 @@ export function init(Constants) {
         {
             card: {
                 translation: [12, 0.6, 11],
+        {
+            card: {
+                name: "cradle",
+                type: "object",
+                translation: [-9.67815341742099, 3.2368919013826734, 3.968801765942323],
+                behaviorModules: ["Rapier", "Cradle"],
+                layers: ["pointer"],
+                shadow: true,
+                scale: [0.2, 0.2, 0.2],
+            }
+        },
 }
