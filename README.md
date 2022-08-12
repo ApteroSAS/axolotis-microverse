@@ -33,7 +33,7 @@ The documentation for the Croquet Microverse is located in the [docs](meta/docs)
 * [docs/Rapier.md](meta/docs/Rapier.md) - Using the Rapier Physics Engine in Microverses
 * [docs/Tutorial.md](meta/docs/Tutorial.md) - The introduction to tutorials
 * [docs/Tutorial1.md](meta/docs/Tutorial1.md) - The tutorial part 1.
-* [docs/Tutorial1.md](meta/docs/Tutorial2.md) - The tutorial part 2.
+* [docs/Tutorial1.md](./docs/Tutorial2.md) - The tutorial part 2.
 
 ## Installation
 Please refer to the [docs/QuickStart.md](meta/docs/QuickStart.md) to get started.
