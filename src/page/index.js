@@ -1,0 +1,1 @@
+window.location.replace("/room.html?world=demo")

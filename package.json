@@ -1,8 +1,8 @@
 {
-  "name": "@croquet/microverse",
-  "version": "0.1.6",
-  "description": "Croquet Microverse",
-  "main": "index.js",
+  "name": "@aptero/microverse",
+  "version": "0.1.0",
+  "description": "Microverse",
+  "main": "src/page/index.js",
   "private": true,
   "scripts": {
     "start": "npm-run-all --parallel dev-server watch-server",
@@ -10,9 +10,7 @@
     "file-server": "npx file-server",
     "watch-server": "npx watch-server",
     "build": "webpack --mode production",
-    "build-dev": "webpack --mode development",
-    "create-version": "./scripts/commit.sh",
-    "build-lib": "npm run build-dev; npm run create-version; cp npm/package.json dist; ./scripts/npm-files.sh; ./scripts/fix-index-html.sh dist"
+    "build-dev": "webpack --mode development"
   },
   "author": "Croquet Corporation",
   "license": "Apache-2.0",

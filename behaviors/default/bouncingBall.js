@@ -58,7 +58,7 @@ class BouncingLogoPawn {
         this.addEventListener("pointerDown", "onPointerDown");
         this.addEventListener("pointerMove", "onPointerMove");
         let image = new Image();
-        image.src = "./assets/SVG/CroquetSymbol_CMYK_NoShadow.svg";
+        image.src = "./assets/SVG/logo.svg";
         image.onload = () => {
             this.image = image;
         }
