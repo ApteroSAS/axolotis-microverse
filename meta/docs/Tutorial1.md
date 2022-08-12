@@ -8,7 +8,7 @@ A number of demo worlds are included with the Microverse repository. We will use
 
 It looks like this:
 
-![Demoworld1](assets/demoWorld1.png)
+![Demoworld1](./assets/demoWorld1.png)
 
 As you can see, this world is shared with another user. tutorial1 is made up of just three cards (not including the avatars). There is a floor card, which allows us to walk around, a light card that lets us see the world around us, and a flat card with the Croquet logo on it. The code defining this world can be found in the worlds folder in the repository. Open microverse/worlds/tutorial.js to see the following code. The init function is used to define the objects that make up the world.
 
@@ -65,7 +65,7 @@ The final section is where we define the cards. A card is easily defined by a nu
                 scale: [4, 4, 4],
                 type: "2d",
                 textureType: "image",
-                textureLocation: "./assets/images/logo.jpg",
+                textureLocation: "./assets/images/CroquetLogo_RGB.jpg",
                 frameColor: 0xcccccc,
                 color: 0xffffff,
                 cornerRadius: 0.05,
@@ -162,7 +162,7 @@ The second part is what we call the "pawn". As might be clear from its name, it 
 
 The last part of the behavior code is simply bundling the actor and pawn behaviors into an exportable module that can then be added to the card when we create that.
 
-* [Tutorial2.md](Tutorial2.md)
+* [Tutorial2]{@tutorial Tutorial2}
 
 **Copyright (c) 2022 Croquet Corporation**
 

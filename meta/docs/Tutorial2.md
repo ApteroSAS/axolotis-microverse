@@ -12,7 +12,7 @@ You can try it out right now. The launch URL is:
 
 Here is an image of the world we will be constructing:
 
-![Tutorial 2](assets/Tutorial2.png)
+![Tutorial 2](./assets/Tutorial2.png)
 
 We are adding some new behaviors to the cards in this world. The "joeTheBox.js" behavior demonstrates how to directly construct a 3D object. The "simpleSpin.js" behavior demonstrates how a simple user interaction triggering an object to spin around its main axis. We will dive into these behaviors shortly.
 
@@ -88,7 +88,7 @@ The next two cards - the light card and the image card are exactly the same.
         scale: [4, 4, 4],
         type: "2d",
         textureType: "image",
-        textureLocation: "./assets/images/logo.jpg",
+        textureLocation: "./assets/images/CroquetLogo_RGB.jpg",
         fullBright: true,
         frameColor: 0xcccccc,
         color: 0xbbbbbb,
@@ -128,9 +128,7 @@ The two new cards are different however. The first card is the "Joe the Box" car
 
 ## Behaviors
 
-There are two new behaviors for us to explore. The first is "joeTheBox", a very simple pawn construction behavior. This version of Joe has no simulation or shared interactions associated with it, thus there is no actor behavior. The second is "simpleSpin", a simple actor user interaction and simulation behavior. SimpleSpin is focused on user interaction and simulation, so this has no pawn behavior. The introductory tutorial has an overview of the actor and pawn system and their relationship.
-
-[Tutorial Intro: Actor Pawn Relationship](Tutorial1.md#actor-pawn-relationship)
+There are two new behaviors for us to explore. The first is "joeTheBox", a very simple pawn construction behavior. This version of Joe has no simulation or shared interactions associated with it, thus there is no actor behavior. The second is "simpleSpin", a simple actor user interaction and simulation behavior. SimpleSpin is focused on user interaction and simulation, so this has no pawn behavior. The [introductory tutorial](./tutorial-Tutorial1.html) has an overview of the actor and pawn system and their relationship.
 
 ## Joe
 
