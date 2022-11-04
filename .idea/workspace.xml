@@ -2,12 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="82062b36-3f38-47c7-91d8-d991c3a92ec3" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/assets/SVG/CroquetSymbol_CMYK_NoShadow.svg" beforeDir="false" afterPath="$PROJECT_DIR$/assets/SVG/CroquetSymbol_CMYK_NoShadow.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/images/CroquetLogo_RGB.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/assets/images/CroquetLogo_RGB.jpg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/behaviors/default/urlLink.js" beforeDir="false" afterPath="$PROJECT_DIR$/behaviors/default/urlLink.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/worlds/default.js" beforeDir="false" afterPath="$PROJECT_DIR$/worlds/default.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/worlds/factory.js" beforeDir="false" afterPath="$PROJECT_DIR$/worlds/factory.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/docker/docker.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker/build.bat" beforeDir="false" afterPath="$PROJECT_DIR$/docker/build.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker/publish.bat" beforeDir="false" afterPath="$PROJECT_DIR$/docker/publish.bat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker/py_docker.py" beforeDir="false" afterPath="$PROJECT_DIR$/docker/py_docker.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,17 +24,21 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\WebStorm 2022.1\\plugins\\JavaScriptLanguage\\jsLanguageServicesImpl\\external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "last_opened_file_path": "C:/Workspace/ApteroVR/axolotis-microverse/docker",
+    "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\WebStorm 2022.1\\plugins\\JavaScriptLanguage\\jsLanguageServicesImpl\\external",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Workspace\ApteroVR\axolotis-microverse\docker" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Workspace\ApteroVR\axolotis-microverse\assets\images" />
       <recent name="C:\Workspace\ApteroVR\axolotis-microverse\assets\SVG" />
@@ -50,11 +53,22 @@
       <option name="presentableId" value="Default" />
       <updated>1667571651722</updated>
       <workItem from="1667571654323" duration="1167000" />
-      <workItem from="1667573292489" duration="2274000" />
+      <workItem from="1667573292489" duration="2796000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

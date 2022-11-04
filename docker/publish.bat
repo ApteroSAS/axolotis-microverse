@@ -1,1 +1,1 @@
-python py_docker.py publish %1
+python py_docker.py publish

@@ -1,8 +1,13 @@
 import sys
 import os
+import json
     
-dockerImage = "axolotis-microverse"
-registry = "registry.aptero.co"
+    
+f = open('docker.json',)
+data = json.load(f)
+dockerImage = data['image']
+registry = data['registry']
+
 c = os.system
 os.chdir("..")
 print(os.getcwd())
@@ -33,7 +38,7 @@ elif(sys.argv[1] == "publish"):
             else:
                 version = "latest"
 
-    c("docker build -t "+dockerImage+" .")
+    c("docker build -t "+dockerImage+" .") 
     c("docker login")
     c("docker tag "+dockerImage+":latest "+registry+"/"+dockerImage+":latest")
     c("docker push "+registry+"/"+dockerImage+":latest")
