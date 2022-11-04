@@ -1,29 +1,35 @@
 /*
-
     Important Note: When changing the height or width of the links and joints,
     you must account for many things. This includes the collider, the translations
-    of the links, the impulse joint creation, and the actual size of the material. 
+    of the links, the impulse joint creation, and the actual size of the material.
     Some of these need to be doubled and others need to be halved or even fourthed,
     so look into the documentation to help figure it out. I've provided some comments
     below to help assist you in changing these values. Also, the code is somewhat
     modified for two connections, so see previous commits for the one connection code.
-    
-    (cd = Microverse.RAPIER.ColliderDesc.ball(0.85))
-    (let translation = [0, 34.135389925172704 - i * 2, 0])
-    (card.call("Rapier$RapierActor", "createImpulseJoint", "ball" ...))
-    (let s = [0.1, 2.3])
 
+    (cd = Microverse.Physics.ColliderDesc.ball(0.85))
+    (let translation = [0, 34.135389925172704 - i * 2, 0])
+    (card.call("Physics$PhysicsActor", "createImpulseJoint", "ball" ...))
+    (let s = [0.1, 2.3])
 */
 
 class CraneActor {
     setup() { // Start With Logic, Continue With Physics Implementation
+        if (!this.physicsWorld) {
+            let physicsManager = this.service("PhysicsManager");
+            console.log("new physics world for crane");
+            this.setPhysicsWorld(physicsManager.createWorld({timeStep: 50}, this.id));
+        }
+
         this.pointA = [-1.4447057496318962, -5.504611090090481, 29.225081241195];
         this.pointB = [-1.4447057496318962, -5.504611090090481, -6.8406291023593755];
         this.subscribe("crane", "updatePositionBy", "updatePositionBy");
-        if (this.ratio === undefined) this.ratio = 0.2;
+        if (this.ratio === undefined) this.ratio = 0.005;
         this.updatePositionBy(0);
-        
-        this.createCard({ // Create Base
+
+        this.removeObjects(); // Reset
+
+        this.base = this.createCard({ // Create Base
             name: "craneBase",
             translation: [0, -4.6239610018586506, 0.35],
             scale: [0.9, 0.9, 0.9],
@@ -31,7 +37,7 @@ class CraneActor {
             parent: this,
             modelType: "glb",
             dataLocation: "35H7xJVLhQNFxNMt5HZigey3PXGNeREIgL3fy_PNJaOsXUFBRUYPGhpTXFlQRhtARhtWR1pEQFBBG1xaGkAadm19f1NxelhAfFNccGxaWntsQmVjTHpXXgVTBxpWWlgbUE1UWEVZUBtBR1BDWkcbWExYXFZHWkNQR0ZQGmABZQcHckV0cnJDXlRReGB3B3JMam0DeUwEGGENWgNhZAxaB1NgWUB0B2waUVRBVBpDQGJqeEV7ZmNQc2JZAWIHAndQVEZ8fURQY0NlBmp_UAd-DH9FZXRXUkRC",
-            behaviorModules: ["Rapier", "CraneLink"],
+            behaviorModules: ["Physics", "CraneLink"],
             craneHandlesEvent: true,
             noSave: true,
             shadow: true,
@@ -39,19 +45,34 @@ class CraneActor {
         });
 
         let d = 9; // Amount of Links (+1) -> Four Links, Four Links, One End Piece (Hook)
-        this.removeObjects(); // Reset
+        // let d = 7; // Amount of Links (+1) -> Four Links, Four Links, One End Piece (Hook) -> Three, Three, QR Code
 
         this.links = [...Array(d).keys()].map((i) => {
 
+            // if (i === 0 || i === 3) { // Top Link, Stays in Place
+            //     bodyDesc = Microverse.Physics.RigidBodyDesc.newKinematicPositionBased();
+            // } else { bodyDesc = Microverse.Physics.RigidBodyDesc.newDynamic().restrictRotations(true, false, false); }
+
             let bodyDesc;
-            if (i === 0 || i === 4) { bodyDesc = Microverse.RAPIER.RigidBodyDesc.newKinematicPositionBased(); } // Top Link, Stays in Place
-            else { bodyDesc = Microverse.RAPIER.RigidBodyDesc.newDynamic(); }
+            if (i === 0 || i === 4) { bodyDesc = Microverse.Physics.RigidBodyDesc.newKinematicPositionBased(); } // Top Link, Stays in Place
+            else { bodyDesc = Microverse.Physics.RigidBodyDesc.newDynamic(); }
+
+            // let translation1 = [-0.8, 33.27402945352548 - i * 2, 0.5]; // Take into Account the * 2, Change for Differing Values
+            // let translation2 = [0.8, 39.27402945352548 - i * 2, 0.5]; // Second Connection
 
             let card;
             let translation1 = [0, 35.135389925172704 - i * 2, 1]; // Take into Account the * 2, Change for Differing Values
             let translation2 = [0, 43.135389925172704 - i * 2, 0]; // Second Connection
             let name = `link${i}`;
             let cd;
+
+            // name: "codeHolder",
+            // translation: [0, 25.27402945352548, 0.5], // Take Second Connection into Account
+            // dataTranslation: [-0.8, -2.0, 0.05], // Offset
+            // dataScale: [3.0, 3.0, 3.0],
+            // dataLocation: "3JH30Eq4hM1ur-svecB231GE2fl14Qku-gPPDKI8KXBwIj4-OjlwZWUsIyYvOWQ_OWQpOCU7Py8-ZCMlZT9lCRICACwOBSc_AywjDxMlJQQTPRocMwUoIXoseGUpJSdkLzIrJzomL2Q-OC88JThkJzMnIyk4JTwvODkvZQwgL3wbHh8eGn8zJQk-AwkODQIzeQAjHCEIJTAeIyEYOAwNGgU5DwJ9DCFlLis-K2UfMAkkLCIpCAQ4BCRyAi0BIAwkIwIgCAcGBih6DQkYBCgpCzs5DRx8OAMt",
+            // cd = Microverse.Physics.ColliderDesc.cuboid(1.0, 1.0, 0.2);
+            // fileName: "/Factory_QRholder.glb",
 
             if (i === d - 1) { // For the Final Link, do Something Different (Not Necessary)
                 card = this.createCard({
@@ -64,53 +85,71 @@ class CraneActor {
                     type: "3d",
                     modelType: "glb",
                     dataLocation: "3DXL69tRPG3TIGu1pGwQ8THC_ykY41jJOqMYGH8DInacLDAwNDd-a2siLSghN2oxN2onNis1MSEwai0razFrBxwMDiIACykxDSItAR0rKwodMxQSPQsmL3QidmsnKylqITwlKTQoIWowNiEyKzZqKT0pLSc2KzIhNjchayJ3HnYwcQcnCgp0cCAcJQtpFC0lAHEVHAI-MBEdLSUWciYrDRN2aRMhFR1rICUwJWssaSMcDXI1DgcdITMuHH0cLi0WdxRzKwk8KXB1MgkdKyEgLBR3cjUsdDcd",
-                    behaviorModules: ["Rapier", "CraneLink"],
+                    behaviorModules: ["Physics", "CraneLink"],
                     craneHandlesEvent: true, // To Add Movement Physics
                     craneProto: true, // Since GLB Exists
                     noSave: true,
                     shadow: true,
                 });
-                card.call("Rapier$RapierActor", "createRigidBody", bodyDesc);
-                cd = Microverse.RAPIER.ColliderDesc.ball(0.85); // Radius
-            } 
-
-            else if (i >= 4) { // Second Link
+                // this.code = this.createCard({
+                //     name: "code",
+                //     translation: [-0.790649609012426, -1.996769647761484, 0.0606205735181959],
+                //     color: 0xffffff,
+                //     frameColor: 0x000000,
+                //     type: "2d",
+                //     textureType: "canvas",
+                //     textureWidth: 256,
+                //     textureHeight: 256,
+                //     height: 1,
+                //     width: 1,
+                //     scale: [4.8, 4.8, 4.8],
+                //     parent: card,
+                //     behaviorModules: ["QRCode"],
+                //     noSave: true,
+                //     shadow: true,
+                // });
+                card.call("Physics$PhysicsActor", "createRigidBody", bodyDesc);
+                cd = Microverse.Physics.ColliderDesc.ball(0.85); // Radius
+            } else if (i >= 4) { // Second Link (Change: 3)
                 card = this.createCard({
                     name, // Link4, Link5 ...
                     translation: translation2,
                     type: "object",
                     parent: this,
-                    behaviorModules: ["Rapier", "CraneLink"],
+                    behaviorModules: ["Physics", "CraneLink"],
                     craneHandlesEvent: true,
                     noSave: true,
                     shadow: true,
                 });
-                card.call("Rapier$RapierActor", "createRigidBody", bodyDesc);
-                cd = Microverse.RAPIER.ColliderDesc.cylinder(0.9, 0.4); // Double Height (Gets Halved), Radius
-            }
-
-            else { // Standard Link
+                card.call("Physics$PhysicsActor", "createRigidBody", bodyDesc);
+                cd = Microverse.Physics.ColliderDesc.cylinder(0.9, 0.4); // Double Height (Gets Halved), Radius
+            } else { // Standard Link
                 card = this.createCard({
                     name, // Link0, Link1 ...
                     translation: translation1,
                     type: "object",
                     parent: this,
-                    behaviorModules: ["Rapier", "CraneLink"],
+                    behaviorModules: ["Physics", "CraneLink"],
                     craneHandlesEvent: true,
                     noSave: true,
                     shadow: true,
                 });
-                card.call("Rapier$RapierActor", "createRigidBody", bodyDesc);
-                cd = Microverse.RAPIER.ColliderDesc.cylinder(0.9, 0.4); // Double Height (Gets Halved), Radius
+                card.call("Physics$PhysicsActor", "createRigidBody", bodyDesc);
+                cd = Microverse.Physics.ColliderDesc.cylinder(0.9, 0.4); // Double Height (Gets Halved), Radius
             }
 
             cd.setRestitution(0.5);
-            cd.setFriction(1);
+            cd.setFriction(0.5);
 
-            if (i >= 4) { cd.setDensity(6.0); }
-            else { cd.setDensity(15.0); }
+            if (i >= 4) {
+                cd.setDensity(1.0);
+            } else { cd.setDensity(3.0); }
 
-            card.call("Rapier$RapierActor", "createCollider", cd);
+            // if (i === d - 1) {
+            //     cd.setDensity(1.0);
+            // } else { cd.setDensity(3.0); }
+
+            card.call("Physics$PhysicsActor", "createCollider", cd);
             return card;
 
         });
@@ -121,13 +160,19 @@ class CraneActor {
                 name: `joint${i}`,
                 type: "object",
                 parent: this,
-                behaviorModules: ["Rapier"],
+                behaviorModules: ["Physics"],
                 noSave: true,
             });
 
-            if (i !== 3) { card.call("Rapier$RapierActor", "createImpulseJoint", "ball", this.links[i], this.links[i + 1], {x: 0, y: -1, z: 0}, {x: 0, y: 1, z: 0}); } // Half Y
-            else { card.call("Rapier$RapierActor", "createImpulseJoint", "ball", this.links[3], this.links[8], {x: 0, y: -1, z: 0}, {x: 0, y: 1, z: 1}); } // Specific Connection (First Joint, Second Joint)
+            if (i !== 3) { // Half Y
+                card.call("Physics$PhysicsActor", "createImpulseJoint", "ball", this.links[i], this.links[i + 1], {x: 0, y: -1, z: 0}, {x: 0, y: 1, z: 0});
+            } else { card.call("Physics$PhysicsActor", "createImpulseJoint", "ball", this.links[3], this.links[8], {x: 0, y: -1, z: 0}, {x: 0, y: 1, z: 1}); } // Specific Connection (First Joint, Second Joint)
             return card;
+
+            // if (i !== 2) { // Half Y
+            //     card.call("Physics$PhysicsActor", "createImpulseJoint", "ball", this.links[i], this.links[i + 1], {x: 0, y: -1, z: 0}, {x: 0, y: 1, z: 0});
+            // } else { card.call("Physics$PhysicsActor", "createImpulseJoint", "ball", this.links[2], this.links[6], {x: 0, y: -1, z: 0}, {x: -1.6, y: 1, z: 0}); } // Specific Connection (First Joint, Second Joint)
+            // return card;
 
         });
 
@@ -144,13 +189,19 @@ class CraneActor {
     }
 
     removeObjects() {
+        if (this.base) {
+            this.base.destroy();
+        }
+        // if (this.code) {
+        //     this.code.destroy();
+        // }
         if (this.links) {
             this.links.forEach(l => l.destroy());
-            this.links = null; 
-        }  
+            this.links = null;
+        }
         if (this.joints) {
             this.joints.forEach(j => j.destroy());
-            this.joints = null; 
+            this.joints = null;
         }
     }
 
@@ -165,8 +216,7 @@ class CraneActor {
 class CranePawn {
     setup() {
         if (this.obj) {
-            this.shape.children.forEach((o) => this.shape.remove(o));
-            this.shape.children = [];
+            [...this.shape.children].forEach((o) => this.shape.remove(o));
             this.obj.dispose();
             this.obj = null;
         }
@@ -177,7 +227,7 @@ class CranePawn {
 }
 
 class CraneLinkActor {
-    setup() { 
+    setup() {
         if (this._cardData.craneHandlesEvent) {
             this.subscribe("craneLink", "handlePhysics", "handlePhysics");
             this.addEventListener("pointerTap", "jolt");
@@ -188,16 +238,16 @@ class CraneLinkActor {
         if (ratio === 0) { return; }
         let r = this.rigidBody;
         if (!r) { return; }
-        let movement = Microverse.v3_scale([0, 0, ratio * 60], 30);
-        r.applyForce({x: movement[0], y: movement[1], z: movement[2]}, true);
+        let movement = Microverse.v3_scale([0, 0, ratio * 100], 0.1);
+        r.applyImpulse({x: movement[0], y: movement[1], z: movement[2]}, true);
     }
 
     jolt(p3d) { // Jolt From Pendulum
         if (!p3d.normal) { return; }
         let r = this.rigidBody;
         if (!r) { return; }
-        let jolt = Microverse.v3_scale(p3d.normal, 250);
-        r.applyForce({x: jolt[0], y: jolt[1], z: jolt[2]}, true);
+        let jolt = Microverse.v3_scale(p3d.normal, -4);
+        r.applyImpulse({x: jolt[0], y: jolt[1], z: jolt[2]}, true);
     }
 
     teardown() {
@@ -209,23 +259,19 @@ class CraneLinkPawn {
     setup() {
 
         /*
-
-          Creates a Three.JS mesh based on the specified rapierShape and rapierSize.
+          Creates a Three.JS mesh based on the specified physicsShape and physicsSize.
           
           For a demo purpose, it does not override an existing shape
           (by checking this.shape.children.length) so that the earth
           shape created by FlightTracker behavior is preserved.
-          
           Uncomment the cyclinder case to add the cylinder shape.
-        
         */
 
         this.removeEventListener("pointerDoubleDown", "onPointerDoubleDown");
         this.addEventListener("pointerDoubleDown", "nop");
 
         if (this.actor._cardData.craneProto) { return; }
-        this.shape.children.forEach((c) => this.shape.remove(c));
-        this.shape.children = [];
+        [...this.shape.children].forEach((c) => this.shape.remove(c));
 
         let s = [0.1, 2.3]; // Radius, Height (Half Height Here)
         let geometry = new Microverse.THREE.CylinderGeometry(s[0], s[0], s[1], 20);
@@ -249,7 +295,7 @@ class CraneButtonActor { // Buttons Move Crane
 
     // Publish Translation
     publishMove() {
-        if (this.occupier !== undefined) { this.future(60).publishMove(); }
+        if (this.occupier !== undefined) { this.future(25).publishMove(); }
         this.publish("crane", "updatePositionBy", this._cardData.craneSpeed);
     }
 
@@ -263,7 +309,7 @@ class CraneButtonActor { // Buttons Move Crane
     // Publish New Focus
     publishFocus(viewId) {
         this.publish(this._cardData.myScope, "focus", viewId);
-    }  
+    }
 
     // Focus Controlling Player
     focus(viewId) {
@@ -273,8 +319,7 @@ class CraneButtonActor { // Buttons Move Crane
 
 class CraneButtonPawn {
     setup() {
-        this.shape.children.forEach((c) => this.shape.remove(c));
-        this.shape.children = [];
+        [...this.shape.children].forEach((c) => this.shape.remove(c));
 
         if (this.shape.children.length === 0) {
 
@@ -293,7 +338,7 @@ class CraneButtonPawn {
             shape.lineTo(0.125, 0.25);
             shape.quadraticCurveTo(0.1, 0.25, 0.1, 0.2);
             shape.lineTo(0.1, 0.025);
-            shape.quadraticCurveTo(0.1, 0, 0.08, 0); 
+            shape.quadraticCurveTo(0.1, 0, 0.08, 0);
             shape.lineTo(0, 0);
 
             let extrudeSettings = {
@@ -321,7 +366,7 @@ class CraneButtonPawn {
             // this.objT = new Microverse.THREE.Mesh(geometryT, material);
 
             // if (this.actor._cardData.craneSpeed > 0) { this.objT.translateY(0.1); }
-            // else { this.objT.translateY(-0.1); } 
+            // else { this.objT.translateY(-0.1); }
             // this.objT.rotation.z = Math.PI / 4;
 
             // this.objB.castShadow = this.actor._cardData.shadow;

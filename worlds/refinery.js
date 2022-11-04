@@ -10,7 +10,7 @@ export function init(Constants) {
     Constants.UserBehaviorDirectory = "behaviors/default";
     Constants.UserBehaviorModules = [
         "demo.js", "flightTracker.js", "spin.js", "lights.js",
-        "slides.js", "cascade.js"
+        "slides.js", "cascade.js", "earth.js"
     ];
 
     Constants.UseRapier = true;
@@ -149,61 +149,12 @@ export function init(Constants) {
         },
         {
             card: {
-                name:"base",
-                type: "object",
-                layers: ["pointer", "walk"],
-                rotation: [-Math.PI / 6, 0, 0],
-                translation: bt,
-                behaviorModules: ["Rapier", "Cascade"],
-                rapierSize: baseSize,
-                color: 0x997777,
-                rapierShape: "cuboid",
-                rapierType: "positionBased",
-                shadow: true,
-            }
-        },
-        {
-            card: {
-                name:"base 2",
-                type: "object",
-                layers: ["pointer", "walk"],
-                translation: [bt[0], -0.30484568847637494, bt[2] - 11.772],
-                rotation: [-Math.PI / 8, 0, 0],
-                behaviorModules: ["Rapier", "Cascade"],
-                rapierSize: [baseSize[0], baseSize[1], baseSize[2] / 3],
-                color: 0x997777,
-                rapierShape: "cuboid",
-                rapierType: "positionBased",
-                shadow: true,
-            }
-        },
-        {
-            card: {
-                name:"base 3",
-                type: "object",
-                layers: ["pointer", "walk"],
-                translation: [bt[0], -2.11649335743053, bt[2] - 21.18],
-                rotation: [0, 0, 0],
-                behaviorModules: ["Rapier", "Cascade"],
-                rapierSize: [baseSize[0] * 0.5, baseSize[1], baseSize[2] * 0.3],
-                color: 0x997777,
-                rapierShape: "cuboid",
-                rapierType: "positionBased",
-                shadow: true,
-            }
-        },
-        {
-            card: {
-                name:"init box",
+                name:"cascade box",
                 type: "object",
                 layers: ["pointer"],
-                translation: [bt[0], -1.11649335743053, bt[2] - 20.80],
-                rotation: [0, 0, 0],
-                behaviorModules: ["Rapier", "Cascade"],
-                rapierSize: [1, 1, 1],
-                rapierShape: "cuboid",
-                color: 0xa2d490,
-                shadow: true,
+                translation: [-20, 0.5, 64],
+                rotation: [0, Math.PI, 0],
+                behaviorModules: ["CascadeBox"],
             }
         },
         {

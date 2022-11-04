@@ -10,13 +10,12 @@ export function init(Constants) {
         "menu.js", "elected.js", "propertySheet.js", "stickyNote.js", "rapier.js", "avatarEvents.js", "pdfview.js", "scrollableArea.js"
     Constants.UserBehaviorDirectory = "behaviors";
     Constants.UserBehaviorModules = [
-        "demo.js", "lights.js", "bouncingBall.js", "bitcoinTracker.js", "spin.js", "pendulum.js", "openPortal.js"
+        "demo.js", "lights.js", "bouncingBall.js", "bitcoinTracker.js", "spin.js", "openPortal.js", "urlLink.js", "cradle.js"
         //"financial/lights-financial.js", "financial/spin.js",
         //"factory/lights.js", "factory/crane.js", "factory/garage.js", "factory/forklift.js", "factory/circle.js", "factory/cascade.js", "factory/earth.js", "factory/conveyorbox.js", "factory/spin.js", "factory/flightTracker.js", "factory/openPortal.js", "factory/rearrange.js",
         //"campus/lights.js", "campus/livemap.js", "campus/drive.js", "campus/earth.js", "campus/spin.js", "campus/pendulum.js", "campus/openPortal.js", "campus/cascade.js"
     ];
 
-    Constants.UseRapier = true;
 
     Constants.DefaultCards = [    ];
                 translation: [12, 0.6, -10],
@@ -57,12 +56,40 @@ export function init(Constants) {
                 type: "3d",
             }
         },
+       /*
+            },*/
+        */
         /*
                 layers: ["pointer", "portal"],
                 translation: [12, 0.6, 11],
-layers: ["pointer", "portal"],
+translation: [-12, -0.4, -10.2],
+rotation: [0, -1.5707963267948966, 0],
+layers: ["pointer"],
+className: "PortalActor",
+color: 16737996,
+cornerRadius: 0.05,
+depth: 0.05,
+frameColor: 8947848,
+height: 2.4,
+portalURL: "?world=refinery",
+type: "2d",
+width: 1.8,
+`}],
                 name:"pendulum",
                 translation: [-0.03701975732147922, 3.2368919013826734, 8.444841625884546],
                 behaviorModules: ["Rapier", "Pendulum"],
                 shadow: true,
+        {
+            card: {
+                name:"pendulum",
+                type: "object",
+                translation: [-0.03701975732147922, 3.2368919013826734, 8.444841625884546],
+                behaviorModules: ["Rapier", "Pendulum"],
+                layers: ["pointer"],
+                scale: [0.2, 0.2, 0.2],
+                color: 0xaa6666,
+            }
+        },
+                translation: [-9.67815341742099, 3.2368919013826734, 3.968801765942323],
+                behaviorModules: ["Rapier", "Cradle"],
 }

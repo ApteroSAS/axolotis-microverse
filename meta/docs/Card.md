@@ -53,17 +53,17 @@ this.set({translation: [1, 2, 3]});
 The property `_translation` is updated and then an event with the property name with "Set" attached is published.
 
 ### `_translation`
-`Array<number, number, number>`
+`Vector3`
 
 The [x, y, z] translation of the card.
 
 ### `_rotation`
-`Array<number, number, number, number>`
+`Quaternion`
 
 The rotation of the card in quaternion.
 
 ### `_scale`
-`Array<number, number, number>`
+`Vector3`
 
 The scale of the card in three axes.
 
@@ -90,7 +90,7 @@ An informative string for the card.
 
 ### `_cardData`
 
-Any other values that the CardActor holds are stored in an object stored in the `_cardData` property. This is needed to mark the values to be stored in the persistent data. 
+Any other values that the CardActor holds are stored in an object stored in the `_cardData` property. This is needed to mark the values to be stored in the persistent data.
 
 ## CardActor Methods
 
@@ -163,14 +163,6 @@ This method add a Croquet event subscription by calling the `subscribe()` method
 
 This method publishes a Croquet event with `this.id` as its `scope`.
 
-### `sayDeck(message:string, data:any)`
-
-This method publishes a Croquet event in the scope of `this._parent.id` if `this._parent` is not undefined, or in `this.id` if it is undefined. Note that `this.parent` is resolved dynamically at the call time.
-
-### `listenDeck(message:string, listener:function|string)`
-
-This method subscribes a Croquet event in the scope of `this._parent.id` if `this._parent` is not undefined, or in `this.id` if it is undefined. Note that `this.parent` is resolved at the first time it is called, and any change to `this._parent` will not update the subscription.
-
 ### `addLayer(newLayerName:string)`
 
 This method adds a new element to the `layers` array. If `newLayerName` is already in the `layers` array, the call does not have any effects.
@@ -185,7 +177,7 @@ This method moves the translation of the card to the specified `[x, y, z]` coord
 
 ### `rotateTo(q:Quotanion)`
 
-This method sets the translation of the card to the specified by a quaternion (`[x, y, z, w]`).
+This method sets the rotation of the card to the specified by a quaternion (`[x, y, z, w]`).
 
 ### `scaleTo(s:Vector3)`
 
@@ -195,6 +187,22 @@ This method sets the scale of the card to the specified by scale factors in [x, 
 
 This method sets the translation and rotation of the card, making sure that those two values are used in the same logical time and used for the rendering.
 
+### `translateBy(v:Vector3)`
+
+This method moves the translation of the card by the specified `[x, y, z]` vector.
+
+### `rotateBy(q:Quotanion)`
+
+This method combines the rotation of the card by  the specified by a quaternion (`[x, y, z, w]`).
+
+### `scaleBy(s:Vector3)`
+
+This method multiplies the scale of the card by the specified by scale factors in [x, y, z] axis.
+
+### `setAnimationClipIndex(animationClipIndex:number)`
+
+A Three.js keyframe based animation is supported. The animation clip can contain multiple tracks. The index specified here dictates which track to play. A cardData called animationStartTime specifiy the base for time offset.
+
 ### `nop()`
 
 This method is empty. It is used to have a way to get the tap to focus keyboard events but you don't need to take any particular action on tap.
@@ -203,7 +211,7 @@ This method is empty. It is used to have a way to get the tap to focus keyboard 
 
 The corresponding actor for a CardPawn is accessible by `this.actor`. You can read a value in `_cardData` simply by `this.actor._cardData.prop`. But note that a pawn should never modify the state of the actor.
 
-The most important property of CardPawn is `shape`, which is a Three.JS `Group`, and the Micorverse system treats it as the primary visual representation of the card. Customizing the visual appearance of a card means to create a new Three.JS Object3D and add it to `shape`.
+The most important property of CardPawn is `shape`, which is a Three.JS `Group`, and the Microverse system treats it as the primary visual representation of the card. Customizing the visual appearance of a card means to create a new Three.JS Object3D and add it to `shape`.
 
 When the Card's type is "2d", and it has some `textureType`, the texture object is stored in `this.texture`.  If the `textureType is "canvas", the DOM canvas is stored in `this.canvas` so a pawn behavior can paint into the canvas.
 
@@ -252,6 +260,8 @@ this.future(20).mth();
 this.future(20).call("Module$Behavior", "mth");
 ```
 
+Note that using `window.setInterval()` and `window.setTimeout()` can be used to have the same effects. It is sometimes convenient to use them when you want to stop the future loop easily.
+
 ### `addEventListener(eventName:EventName, listener:function|string)`
 
 This method adds a "listener" to be invoked when an event occurs on the pawn of a card. When `listener` is a string, it has to have the name of an existing method of CardPawn or the behavior itself. (Internally the function object is stored in the event listener data structure.)
@@ -284,14 +294,9 @@ This method add a Croquet event subscription by calling the `subscribe()` method
 
 This method publishes a Croquet event with `this.actor.id` as its `scope`.
 
-### `sayDeck(message:string, data:any)`
+### `getMyAvatar():AvatarPawn`
 
-This method publishes a Croquet event in the scope of `this.actor._parent.id` if `this.actor._parent` is not undefined, or in `this.actor.id` if it is undefined. Note that `this.actor.parent` is resolved dynamically at the call time.
-
-### `listenDeck(message:string, listener:function|string)`
-
-This method subscribes a Croquet event in the scope of `this.actor._parent.id` if `this.actor._parent` is not undefined, or in `this.actor.id` if it is undefined. Note that `this.parent` is resolved at the first time it is called, and any change to `this.actor._parent` will not update the subscription.
-
+This method returns the AvatarPawn of the local client. Recall that the notion of "my" avatar only exists on the view side. The model side treats all avatars equally, even the one that is associated with the local computer. This is why this method is on the pawn side, and returns the AvatarPawn.
 
 ### `addUpdateRequest(array:Array<behaviorName, methodName>)`
 

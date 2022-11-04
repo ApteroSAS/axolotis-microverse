@@ -1,17 +1,23 @@
 class PendulumActor {
     setup() {
         let d = 10;
+
+        if (!this.physicsWorld) {
+            let physicsManager = this.service("PhysicsManager");
+            console.log("new physics world for pendulum");
+            this.setPhysicsWorld(physicsManager.createWorld({timeStep: 30, gravity: [0, -4, 0]}, this.id));
+        }
         this.removeObjects();
         this.links = [...Array(d).keys()].map((i) => {
             let kinematic;
             if (i === 0) {
-                kinematic = Microverse.RAPIER.RigidBodyDesc.newKinematicPositionBased();
+                kinematic = Microverse.Physics.RigidBodyDesc.newKinematicPositionBased();
             } else {
-                kinematic = Microverse.RAPIER.RigidBodyDesc.newDynamic();
+                kinematic = Microverse.Physics.RigidBodyDesc.newDynamic();
             }
 
             let card;
-            let translation = [0, 0 - i * 2, 0];
+            let translation = [0, 0 - i * 2.03, 0];
             let name = `link${i}`;
             if (i === d - 1) {
                 card = this.createCard({
@@ -23,7 +29,7 @@ class PendulumActor {
                     name,
                     parent: this,
                     pendulumProto: true,
-                    behaviorModules: ["Rapier", "PendulumLink"],
+                    behaviorModules: ["Physics", "PendulumLink"],
                     noSave: true,
                 });
             } else {
@@ -33,26 +39,26 @@ class PendulumActor {
                     name,
                     color: this._cardData.color,
                     parent: this,
-                    behaviorModules: ["Rapier", "PendulumLink"],
+                    behaviorModules: ["Physics", "PendulumLink"],
                     noSave: true,
                 });
             }
-            card.call("Rapier$RapierActor", "createRigidBody", kinematic);
+            card.call("Physics$PhysicsActor", "createRigidBody", kinematic);
 
             let s = [0.1, 1];
             s = [s[1] / 2, s[0]];
-            let cd = Microverse.RAPIER.ColliderDesc.cylinder(...s);
+            let cd = Microverse.Physics.ColliderDesc.cylinder(...s);
 
             cd.setRestitution(0.5);
             cd.setFriction(1);
 
             if (i === d - 1) {
-                cd.setDensity(10);
+                cd.setDensity(1);
             } else {
-                cd.setDensity(1.5);
+                cd.setDensity(0.03);
             }
 
-            card.call("Rapier$RapierActor", "createCollider", cd);
+            card.call("Physics$PhysicsActor", "createCollider", cd);
             return card;
         });
 
@@ -61,11 +67,11 @@ class PendulumActor {
                 type: "object",
                 name: `joint${i}`,
                 parent: this,
-                behaviorModules: ["Rapier"],
+                behaviorModules: ["Physics"],
                 noSave: true,
             });
             card.call(
-                "Rapier$RapierActor", "createImpulseJoint", "ball", this.links[i], this.links[i + 1],
+                "Physics$PhysicsActor", "createImpulseJoint", "ball", this.links[i], this.links[i + 1],
                 {x: 0, y: -1, z: 0}, {x: 0, y: 1, z: 0}
             );
             // card.future(3000).destroy();
@@ -96,8 +102,7 @@ class PendulumActor {
 class PendulumPawn {
     setup() {
         if (this.obj) {
-            this.shape.children.forEach((o) => this.shape.remove(o));
-            this.shape.children = [];
+            [...this.shape.children].forEach((o) => this.shape.remove(o));
             this.obj.dispose();
             this.obj = null;
         }
@@ -126,16 +131,14 @@ class PendulumLinkActor {
         let r = this.rigidBody;
         if (!r) {return;}
 
-        let jolt = Microverse.v3_scale(p3d.normal, -40);
-        r.applyForce({x: jolt[0], y: jolt[1], z: jolt[2]}, true);
+        let jolt = Microverse.v3_scale(p3d.normal, -0.03);
+        r.applyImpulse({x: jolt[0], y: jolt[1], z: jolt[2]}, true);
     }
 }
 
 class PendulumLinkPawn {
     setup() {
         /*
-          Creates a Three.JS mesh based on the specified rapierShape and rapierSize.
-
           For a demo purpose, it does not override an existing shape
           (by checking this.shape.children.length) so that the earth
           shape created by FlightTracker behavior is preserved.
@@ -147,8 +150,7 @@ class PendulumLinkPawn {
         this.addEventListener("pointerDoubleDown", "nop");
 
         if (this.actor._cardData.pendulumProto) {return;}
-        this.shape.children.forEach((c) => this.shape.remove(c));
-        this.shape.children = [];
+        [...this.shape.children].forEach((c) => this.shape.remove(c));
 
         let s = [0.1, 2.3];
         let geometry = new Microverse.THREE.CylinderGeometry(s[0], s[0], s[1], 20);

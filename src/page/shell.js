@@ -8,6 +8,18 @@ import { App } from "@croquet/worldcore-kernel";
 const PREFIX = "croquet:microverse:";
 
 let shell;
+// no url option => no voice, no settings and use alice avatars
+// voiceChat     => voice chat enabled, and show the initial settings
+// showSettings  => show the avatar selection but not start voice.
+// those parameters are tested with has(), so the value is not significant.
+
+const { searchParams } = new URL(window.location);
+const settingsOption = searchParams.has('showSettings');
+const voice = searchParams.has('voiceChat'); // add voice chat
+const showSettings = voice || settingsOption;
+let localConfiguration = (showSettings ? loadLocalStorage() : null) || {};
+localConfiguration.voice = voice;
+localConfiguration.showSettings = showSettings;
 
 export function startShell() {
     shell = new Shell();
@@ -37,7 +49,7 @@ class Shell {
         setTitle(portalURL);
         // remove HUD from DOM in shell
         const hud = document.getElementById("hud");
-        hud.parentElement.removeChild(hud);
+        hud.remove();
         const shellHud = document.getElementById("shell-hud");
         shellHud.classList.toggle("is-shell", true);
         // TODO: create HUD only when needed?
@@ -83,8 +95,8 @@ class Shell {
             }
         });
         if(document.getElementById("fullscreenBttn")) {
-        this.fullscreenBttn = document.getElementById("fullscreenBttn");
-        this.fullscreenBttn.onclick = (e) => {
+        this.fullscreenBtn = document.getElementById("fullscreenBtn");
+        this.fullscreenBtn.onclick = (e) => {
                 e.stopPropagation();
                 e.preventDefault();
 
@@ -111,7 +123,7 @@ class Shell {
         this.knob = document.getElementById("knob");
         this.trackingknob = document.getElementById("trackingknob");
 
-        this.knobStyle = window.getComputedStyle(this.knob);
+        this.adjustJoystickKnob();
         window.onresize = () => this.adjustJoystickKnob();
 
         if (!document.head.querySelector("#joystick-css")) {
@@ -119,7 +131,13 @@ class Shell {
             css.rel = "stylesheet";
             css.type = "text/css";
             css.id = "joystick-css";
-            css.onload = () => this.adjustJoystickKnob();
+            css.onload = () => {
+                this.adjustJoystickKnob();
+                if (this._hudFlags) {
+                    this.setButtonsVisibility(this._hudFlags);
+                    delete this._hudFlags;
+                }
+            };
             css.href = "./assets/css/joystick.css";
             document.head.appendChild(css);
         }
@@ -147,9 +165,14 @@ class Shell {
     }
 
     adjustJoystickKnob() {
-        let radius = (parseFloat(this.knobStyle.width) / 2) || 30;
-        this.trackingknob.style.transform = "translate(0px, 0px)";
-        this.knob.style.transform = `translate(${radius}px, ${radius}px)`;
+        let joystickStyle = window.getComputedStyle(this.joystick);
+        let knobStyle = window.getComputedStyle(this.knob);
+        let center = (parseFloat(joystickStyle.width) || 120) / 2;
+        let size = (parseFloat(knobStyle.width) || 60) / 2;
+        let radius = center - size;
+        this.joystickLayout = { center, size, radius };
+        this.trackingknob.style.transform = "translate(0px, 0px)"; // top-left
+        this.knob.style.transform = `translate(${center-size}px, ${center-size}px)`;
     }
 
     frameEntry(frameId) {
@@ -388,26 +411,68 @@ class Shell {
                     console.warn("shell: ignoring world-enter from non-primary portal-" + fromPortalId);
                 }
                 return;
+            case "world-replace":
+                // same as world-enter except we delete the old frame first
+                if (fromPortalId === this.primaryFrameId) {
+                    console.log("shell: world-replace to " + data.targetURL);
+                    // release and fade outcurrent world
+                    this.primaryFrame.style.background = "black";
+                    this.primaryFrame.src = "";
+                    this.primaryFrame.style.transition = "opacity 1s";
+                    this.primaryFrame.style.opacity = 0;
+                    this.removeFrame(this.primaryFrameId);
+                    // create new world
+                    let targetFrameId = this.findFrame(data.targetURL);
+                    if (!targetFrameId) {
+                        console.log("shell: world-replace creating frame for", data.targetURL);
+                        targetFrameId = this.addFrame(null, data.targetURL);
+                    }
+                    setTimeout(() => {
+                        const frameEntry = this.frameEntry(targetFrameId);
+                        frameEntry.isMicroverse = true; // HACK
+                        this.activateFrame(targetFrameId, true, data.transferData); // true => push state
+                    }, 1000);
+                } else {
+                    console.warn("shell: ignoring world-replace from non-primary portal-" + fromPortalId);
+                }
+                return;
             case "hud":
-                let joystickFlag = data.joystick;
-                let fullscreenFlag = data.fullscreen;
-                if (joystickFlag !== undefined && this.joystick) {
-                    if (joystickFlag) {
-                        this.joystick.style.removeProperty("display");
-                    } else {
-                        this.joystick.style.setProperty("display", "none");
-                    }
-                }
-                if (fullscreenFlag !== undefined && this.fullscreenBttn) {
-                    if (fullscreenFlag) {
-                        this.fullscreenBttn.style.removeProperty("display");
-                    } else {
-                        this.fullscreenBttn.style.setProperty("display", "none");
-                    }
-                }
+                this.setButtonsVisibility(data);
+                return;
+            case "send-configuration":
+                console.log("sending config", localConfiguration);
+                this.sendToPortal(fromPortalId, "local-configuration", { localConfig: localConfiguration });
+                return;
+            case "update-configuration":
+                console.log("updated config", data.localConfig);
+                localConfiguration = data.localConfig;
+                localConfiguration.userHasSet = true;
+                saveLocalStorage(data.localConfig);
                 return;
             default:
                 console.warn(`shell: received unknown command "${cmd}" from portal-${fromPortalId}`, data);
+        }
+    }
+
+    setButtonsVisibility(data) {
+        let joystickFlag = data.joystick;
+        let fullscreenFlag = data.fullscreen;
+        if (!document.head.querySelector("#joystick-css")) {
+            this._hudFlags = {joystick: data.joystick, fullscreen: data.fullscreen};
+        }
+        if (joystickFlag !== undefined && this.joystick) {
+            if (joystickFlag) {
+                this.joystick.style.removeProperty("display");
+            } else {
+                this.joystick.style.setProperty("display", "none");
+            }
+        }
+        if (fullscreenFlag !== undefined && this.fullscreenBtn) {
+            if (fullscreenFlag) {
+                this.fullscreenBtn.style.removeProperty("display");
+            } else {
+                this.fullscreenBtn.style.setProperty("display", "none");
+            }
         }
     }
 
@@ -418,6 +483,9 @@ class Shell {
 
     findFrame(portalURL, filterFn = null) {
         portalURL = portalToFrameURL(portalURL, "");
+        // for some parameters it doesn't matter if the frame has a value or not,
+        // let alone whether the value matches the request
+        const ignorables = ["debug"];
         // find an existing frame for this portalURL, which may be partial,
         // in particular something loaded from a default spec (e.g. ?world=portal1)
         outer: for (const [portalId, frameEntry] of this.frames) {
@@ -433,14 +501,14 @@ class Shell {
             const frameUrl = new URL(frame.src);
             if (frameUrl.origin !== url.origin) continue;
             if (frameUrl.pathname !== url.pathname) continue;
+            ignorables.forEach(key => frameUrl.searchParams.delete(key))
             // some params must match
             for (const [key, value] of url.searchParams) {
+                if (ignorables.includes(key)) continue;
                 const frameValue = frameUrl.searchParams.get(key);
                 frameUrl.searchParams.delete(key);
                 // for "portal" and "anchor" params, empty values match
                 if ((key === "portal" || key === "anchor") && (!value || !frameValue)) continue;
-                // for "debug" param, any value matches
-                if (key === "debug") continue;
                 // for other params, exact match is required
                 if (frameValue !== value) continue outer;
             }
@@ -615,7 +683,7 @@ class Shell {
         e.preventDefault();
         e.stopPropagation();
         this.activeMMotion = null;
-        let radius = parseFloat(this.knobStyle.width) / 2;
+        let { radius } = this.joystickLayout;
         this.trackingknob.style.transform = "translate(0px, 0px)";
         this.knob.style.transform = `translate(${radius}px, ${radius}px)`;
         this.sendToPortal(this.primaryFrameId, "motion-end");
@@ -629,20 +697,19 @@ class Shell {
             let dx = e.clientX - this.knobX;
             let dy = e.clientY - this.knobY;
 
-            let radius = parseFloat(this.knobStyle.width) / 2;
-            let left = parseFloat(this.knobStyle.left) / 2;
-
             this.sendToPortal(this.primaryFrameId, "motion-update", {dx, dy});
             this.activeMMotion.dx = dx;
             this.activeMMotion.dy = dy;
 
             this.trackingknob.style.transform = `translate(${dx}px, ${dy}px)`;
 
-            let ds = dx ** 2 + dy ** 2;
-            if (ds > (radius + left) ** 2) {
-                ds = Math.sqrt(ds);
-                dx = (radius + left) * dx / ds;
-                dy = (radius + left) * dy / ds;
+            let { radius } = this.joystickLayout;
+
+            let squaredDist = dx ** 2 + dy ** 2;
+            if (squaredDist > radius ** 2) {
+                let dist = Math.sqrt(squaredDist);
+                dx = radius * dx / dist;
+                dy = radius * dy / dist;
             }
 
             this.knob.style.transform = `translate(${radius + dx}px, ${radius + dy}px)`;
@@ -736,4 +803,30 @@ function setTitle(url) {
     if (url.startsWith(location.origin)) url = url.substr(location.origin.length + 1);
     else url = url.substr(url.indexOf("://") + 3);
     document.title = url;
+}
+
+function loadLocalStorage() {
+    if (!window.localStorage) { return null; }
+    try {
+        let localSettings = JSON.parse(window.localStorage.getItem('microverse-settings'));
+        if (!localSettings || localSettings.version !== "1") {
+            throw new Error("different version of data");
+        }
+        return localSettings;
+    } catch (e) { return null; }
+}
+
+function saveLocalStorage(configuration) {
+    if (!window.localStorage) { return; }
+    try {
+        let {nickname, type, avatarURL, handedness} = configuration;
+        let settings = {
+            version: "1",
+            nickname,
+            type,
+            avatarURL,
+            handedness
+        };
+        window.localStorage.setItem('microverse-settings', JSON.stringify(settings));
+    } catch (e) { /* ignore */ }
 }

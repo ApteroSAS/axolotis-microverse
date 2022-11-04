@@ -29,14 +29,29 @@ In the following, we describe the properties and how they interact with each oth
 
 ## Concepts
 
-A card is specified by a JSONable set of properties. The properties specify 
+A card is specified by a JSONable set of properties. The properties specify:
 1. where the card is spatially situated 
 2. how it interacts with the user pointer interaction 
 3. how it looks 
 4. what user-defined behavior it has 
-5. data specific to user-defined behaviors. 
+5. data specific to user-defined behaviors.
 
 We group these properties into four categories, "spatial", "pointer", "visual", and "code"/"card data".
+
+
+Many properties have types of three-element array for (x, y, z) vector, or four-element array for a quaternion.
+
+```TypeScript
+type Vector3 = [<number>, <number, <number>]
+type Quaternion = [<number>, <number, <number>, <number>]
+```
+
+Also, typically a rotation type can take an Euler angle. Namely, if a three-element array is specified for rotation it is interpreted as an Euler angle. So the "Rotation" type can be represented as follows and the value is intepretered based on the length of the array.
+
+```TypeScript
+type Euler = [<number>, <number, <number>]
+type Rotation = Quaternion|Euler
+```
 
 ## Spatial Properties
 
@@ -53,7 +68,7 @@ spatial
 ### Type
 
 ```TypeScript
-Array<number, number, number>|undefined
+Vector3|undefined
 ```
 
 ### Description
@@ -72,7 +87,7 @@ spatial
 ### Type
 
 ```TypeScript
-Array<number, number, number>|undefined
+Vector3|undefined
 ```
 
 ### Description
@@ -92,12 +107,12 @@ spatial
 ### Type
 
 ```TypeScript
-Array<number, number, number, number?>|undefined
+Rotation|undefined
 ```
 
 ### Description
 
-Specifies the rotation of the card. If the Array has three elements, it is interpreted as an euler angle.  If the array has four elements, it is interpreted as a quaternion. It defaults to [0, 0, 0, 1] (no rotation) when not specified.
+Specifies the rotation of the card. It defaults to [0, 0, 0, 1] (unit rotation) when not specified.
 
 ---
 
@@ -112,7 +127,7 @@ spatial
 ### Type
 
 ```TypeScript
-Array<number, number, number>|undefined
+Vector3|undefined
 ```
 
 ### Description
@@ -134,7 +149,7 @@ spatial
 ### Type
 
 ```TypeScript
-Array<number, number, number>|undefined
+Vector3|undefined
 ```
 
 ### Description
@@ -156,14 +171,14 @@ spatial
 ### Type
 
 ```TypeScript
-Array<number, number, number, number?>|undefined
+Rotation|undefined
 ```
 
 ### Description
 
 A 3D model loaded as part of a card may have a rotation that does not match with the orientation of the card. You can use dataRotation as a "one time" fix to rotate the 3D model when loading.
 
-Specifies the rotation of the loaded model. If the Array has three elements, it is interpreted as an euler angle.  If the array has four elements, it is interpreted as aquaternion. It defaults to [0, 0, 0, 1] (no rotation) when not speficied.
+Specifies the rotation of the loaded model. It defaults to [0, 0, 0, 1] (no rotation) when not speficied.
 
 ---
 
@@ -184,6 +199,26 @@ string|CardActor|undefined
 ### Description
 
 This property sets up the display scene hierarchy. Special care is taken when an actual CardActor is passed in, and also during an initialization the interpretation of the value changes.  See more information on the `parent` property below.
+
+---
+
+### Name
+
+spawn
+
+### Category
+
+spatial
+
+### Type
+
+```TypeScript
+"default":string
+```
+
+### Description
+
+This is a special property whose only supported value is "default". If there is a card with this value, the translation and the rotation of the card is used as the "spawn point" of the world for an newly joining avatar.
 
 ---
 
@@ -225,8 +260,7 @@ visual
 ### Type
 
 ```TypeScript
-type Type ="2d"|"3d"|"lighting"|"object"|"code"
-Type|undefined
+"2d"|"3d"|"lighting"|"object"|"code"
 ```
 
 ### Description
@@ -255,7 +289,7 @@ The value is interpreted as URL, fragment of URL, Croquet Data ID or `undefined`
 
 It contains the location of SVG or 3d model data.  It is a URL, either full URL or a relative path from the application, or Croquet Data ID.
 
-If you drag and drop a file to create a card, you can open the Property Sheet by Ctrl+tap, and check the value of dataLocation for its Data ID.
+If you drag and drop a file to create a card, you can open the Property Sheet by ctrl- or alt-click and then click on the property sheet icon to check the value of dataLocation for its Data ID.
 
 ---
 
@@ -424,7 +458,7 @@ URL, fragment of URL, Croquet Data ID or `undefined`
 
 It contains the location of an image data. It is a URL, either full URL or a relative path from the application, or Croquet Data ID.
 
-If you drag and drop an image to create a card, you can open the Property Sheet by Ctrl+tap, and check the value of `textureLocation` for its Data ID.
+If you drag and drop an image to create a card, you can open the Property Sheet by ctrl- or alt-click and then click on the property sheet icon to check the value of textureLocation for its Data ID.
 
 --- 
 
@@ -489,6 +523,25 @@ boolean
 
 When type is "3d", it specifies whether the model should be rendered the both sides of the geometry.
 
+---
+
+### Name
+
+`flatten`
+
+### Category
+
+visual
+
+### Type
+
+```TypeScript
+boolean
+```
+
+### Description
+
+When type is "3d", and the value is true, the system tries its best to remove the nested Object3D structure and merge meshes with the same texture.
 
 ---
 
@@ -523,7 +576,7 @@ visual
 ### Type
 
 ```TypeScript
-Array<number, number, number>
+Vector3
 ```
 
 ### Description
@@ -564,7 +617,7 @@ visual
 ### Type
 
 ```TypeScript
-Array<number, number, number>
+Vector3
 ```
 
 ### Description
@@ -575,13 +628,28 @@ Specifies the position of the placeholder object.
 
 ### Name
 
+`avatarParts`
+
+### Category
+
+visual
+
+### Type
+boolean|undefined
+
+### Description
+
+The avatar can apply a special visibility treatment for a card that is attached to it; so that objects don't occulude the user's view. The avatarParts flag enables the visibility changes. (e.g., the name tag above the avatar's head has this flag.)
+
+---
+
+### Name
+
 `textScale`
 
 ### Category
 
-```TypeScript
 visual
-```
 
 ### Type
 number|undefined
@@ -777,7 +845,7 @@ boolean
 
 ### Description
 
-When true, the card is not stored in the persistent data.
+When true, the card is not stored in the persistent data. Currently all children of a card with `noSave` also need to have the flag set explicitly.
 
 ---
 

@@ -130,7 +130,6 @@ export function init(Constants) {
                 type: "object",
                 translation: [71.17293618667556, 8.245323976153406, -106.57786383978849],
                 // translation: [68, 9.3, -102],
-                behaviorModules: ["Rapier", "Pendulum"],
                 layers: ["pointer"],
                 scale: [0.2, 0.2, 0.2],
                 color: 0xaa6666,
@@ -148,12 +147,14 @@ export function init(Constants) {
 
         {
             card: {
-                name:"base",
+                name: "cascade",
                 type: "object",
                 layers: ["pointer", "walk"],
                 rotation: cr,
                 translation: [117.51152685835386, 5.399264662960818, -133.3030737470486],
-                behaviorModules: ["Rapier", "Cascade"],
+                rotation: [0, -Math.PI * 0.24, 0],
+                // translation: [3, 3, -10],
+                behaviorModules: ["CascadeBox"],
                 rapierSize: baseSize,
                 color: 0x997777,
                 rapierShape: "cuboid",
@@ -164,7 +165,6 @@ export function init(Constants) {
         {
             card: {
                 name:"base 2",
-                type: "object",
                 layers: ["pointer", "walk"],
                 translation: [115.10571744346545, 3.6706208296689598, -130.67510326608854],
                 rotation: cr2,

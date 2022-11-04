@@ -6,14 +6,14 @@
 
 import {
     Data, Constants, // re-exported from @croquet/croquet
-    Actor, Pawn, ModelService, ViewService, mix, AM_Smoothed, PM_Smoothed,
+    Actor, Pawn, ModelService, ViewService, mix, AM_Smoothed, PM_Smoothed, GetPawn,
     v3_dot, v3_cross, v3_sub, v3_add, v3_normalize, v3_magnitude, v3_sqrMag, v3_transform, v3_rotate,
     q_euler, q_multiply,
     m4_invert, m4_identity
 } from '@croquet/worldcore-kernel';
 import { THREE, THREE_MESH_BVH, PM_ThreeVisible } from './ThreeRender.js';
 import { AM_PointerTarget, PM_PointerTarget } from './Pointer.js';
-import { addShadows, normalizeSVG, addTexture } from './assetManager.js'
+import { addMeshProperties, normalizeSVG, addTexture } from './assetManager.js'
 import { TextFieldActor } from './text/text.js';
 import { DynamicTexture } from './DynamicTexture.js'
 import { AM_Code, PM_Code } from './code.js';
@@ -53,6 +53,11 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
         this.listen("setAnimationClipIndex", this.setAnimationClipIndex);
     }
 
+    destroy() {
+        this.publish("actorManager", "destroyed", this.id);
+        super.destroy();
+    }
+
     separateOptions(options) {
         // options are either intrinsic or non-intrinsic. We store non-intrinsic values in _cardData.
         let cardOptions = {};
@@ -70,6 +75,7 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
 
     updateOptions(options) {
         // fully override the _cardData with given variable (keys that are not in options will be deleted.
+        console.log("updateOptions", options);
         let {cardOptions, cardData} = this.separateOptions(options);
         this.updateBehaviors(options);
         this.set({...cardOptions});
@@ -138,16 +144,6 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
                 if (oldModule.pawnBehaviors) {
                     allOldPawnBehaviors.push(...oldModule.pawnBehaviors.values());
                 }
-                // re-add system module provided it's still in the list
-                if (oldModule.systemModule && options.behaviorModules.includes(oldModule.externalName)) {
-                    oldSystemModules.push(oldModule.externalName);
-                    if (oldModule.actorBehaviors) {
-                        allNewActorBehaviors.push(...oldModule.actorBehaviors.values());
-                    }
-                    if (oldModule.pawnBehaviors) {
-                        allNewPawnBehaviors.push(...oldModule.pawnBehaviors.values());
-                    }
-                }
             });
         }
 
@@ -208,7 +204,7 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
             }
         } else if (type === "2d" || type === "2D" ) {
         } else if (type === "lighting") {
-        } else if (type === "object") {
+        } else if (type === "object" || type === "initial") {
         } else {
             console.log("unknown type for a card: ", options.type);
         }
@@ -347,25 +343,8 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
         }
     }
 
-    setBehaviors(selection) {
-        // this is called when behavior list in the property sheet is changed.
-        // perhaps moving this to propertySheet.js is the right thing to do.
-        let behaviorModules = [];
-
-        selection.forEach((obj) => {
-            let {label, selected} = obj;
-            if (this.behaviorManager.modules.get(label)) {
-                if (selected) {
-                    behaviorModules.push(label);
-                }
-            }
-        });
-        this.updateBehaviors({behaviorModules});
-    }
-
     setAnimationClipIndex(animationClipIndex) {
         // called when a view loads a 3D model and detects that it has animation clips.
-        if (this._cardData.animationClipIndex !== undefined) {return;}
         this._cardData.animationClipIndex = animationClipIndex;
         if (this._cardData.animationStartTime === undefined) this._cardData.animationStartTime = this.now();
         this.say("animationStateChanged");
@@ -374,6 +353,7 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
     intrinsicProperties() {return intrinsicProperties;}
 
     saySelectEdit() {
+        console.log("saySelectEdit says doSelectEdit");
         this.say("doSelectEdit");
     }
 
@@ -420,6 +400,8 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
                         runs: runs,
                     };
                     Cls = TextFieldActor;
+                } else if (card.type === "text") {
+                    Cls = TextFieldActor;
                 } else if (card.className) {
                     Cls = appManager.get(card.className);
                     delete options.className;
@@ -439,12 +421,6 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
 
                 if (Array.isArray(card.dataRotation) && card.dataRotation.length === 3) {
                     options.dataRotation = q_euler(...card.dataRotation);
-                }
-
-                // TODO: remove after alpha
-                if (options.targetURL && !options.portalURL) {
-                    options.portalURL = options.targetURL;
-                    delete options.targetURL;
                 }
 
                 if (nameMap) {
@@ -475,9 +451,13 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
     }
 
     get rigidBody() {
-        // return this.$rigidBody;
-        return this.call("Rapier$RapierActor", "getRigidBody");
-        // return this.call("Physics$PhysicsActor", "getRigidBody");
+        // the API changed from rapier 0.7.6 to 0.9.0, but we do not want to load two versions of Rapier engines.
+        // The old session with Rapier 0.7.6 will still load with the stubbed out versions of behaviors/croquet/rapier.js.
+        // but the simulation in such a session won't run anymore.
+        if (this._oldRapier07) {
+            return {applyForce: () => undefined, applyTorque: () => undefined};
+        }
+        return this.call("Physics$PhysicsActor", "getRigidBody");
     }
 
     setPhysicsWorld(v) {
@@ -495,6 +475,10 @@ export class CardActor extends mix(Actor).with(AM_Smoothed, AM_PointerTarget, AM
 
     collisionEvent(rb1, rb2, started) {
         return this.call(this.collisionEventHandlerBehavior, this.collisionEventHandlerMethod, rb1, rb2, started);
+    }
+
+    getTextFieldActorClass() {
+        return TextFieldActor;
     }
 }
 CardActor.register('CardActor');
@@ -518,8 +502,10 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
 
         this.listen("saveCard", this.saveCard);
         this.listen("animationStateChanged", this.tryStartAnimation);
+        this.animationInterval = null;
         this.subscribe(this.id, "3dModelLoaded", this.tryStartAnimation);
         this.constructCard();
+        this._editMode = false; // used to determine if we should ignore pointer events
     }
 
     sayDeck(message, vars) {
@@ -562,6 +548,7 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
         if (cardData.textureLocation) {
             assetManager.revoke(cardData.textureLocation, this.id);
         }
+        this.cleanupColliderObject();
         super.destroy();
     }
 
@@ -575,12 +562,16 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
 
     cleanupColliderObject() {
         if (this.colliderObject) {
-            this.colliderObject.children.forEach((m) => {
-                this.colliderObject.remove(m);
+            [...this.colliderObject.children].forEach((m) => {
+                if (m.geometry) {
+                    m.geometry.dispose();
+                    this.colliderObject.remove(m);
+                }
             });
             if (this.colliderObject.geometry) {
                 this.colliderObject.geometry.dispose();
             }
+            this.colliderObject.removeFromParent();
             delete this.colliderObject;
         }
     }
@@ -634,6 +625,11 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
         delete this.properties2D;
         delete this.animationSpec;
 
+        if (this.animationInterval) {
+            clearInterval(this.animationInterval);
+            this.animationInterval = null;
+        }
+
         this.cleanupColliderObject();
 
         if (this.shape) {
@@ -653,7 +649,7 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
                     }
                 }
             });
-            this.shape.children.forEach((m) => this.shape.remove(m));
+            [...this.shape.children].forEach((m) => this.shape.remove(m));
         }
     }
 
@@ -672,11 +668,16 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
             let color = options.placeholderColor || 0x808080;
             let offset = options.placeholderOffset || [0, -1.7, 0];
 
-            const gridImage = './assets/images/grid.png';
-            const texture = new THREE.TextureLoader().load(gridImage);
+            const gridImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOnAAADusBZ+q87AAAAJtJREFUeJzt0EENwDAAxLDbNP6UOxh+NEYQ5dl2drFv286598GrA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAa4AO0BqgA7QG6ACtATpAu37AD8eaBH5JQdVbAAAAAElFTkSuQmCC";
+
+            let image = new Image();
+            let texture = new THREE.Texture(image);
+            image.onload = () => texture.needsUpdate = true;
+            image.src = gridImage;
+
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set( size[0], size[2] );
+            texture.repeat.set(size[0], size[2]);
             let pGeometry = new THREE.BoxGeometry(...size);
             let pMaterial = new THREE.MeshStandardMaterial({map:texture, color: color, side: THREE.FrontSide});
 
@@ -694,18 +695,26 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
         let name = this.actor.name;
         let shadow = options.shadow !== undefined ? options.shadow : true;
         let singleSided = options.singleSided !== undefined ? options.singleSided : false;
-        if (!model3d) {return;}
-        let assetManager = this.service("AssetManager").assetManager;
+        let noFog = options.noFog !== undefined ? options.noFog : false;
 
+        // bail out if we're in the process of loading this same model
+        if (!model3d || this._model3dLoading === model3d) {return;}
+
+        this._model3dLoading = model3d;
+        let assetManager = this.service("AssetManager").assetManager;
         this.getBuffer(model3d).then((buffer) => {
             assetManager.setCache(model3d, buffer, this.id);
             return assetManager.load(buffer, modelType, THREE);
         }).then((obj) => {
-            addShadows(obj, shadow, singleSided, THREE);
+            if (model3d !== this._model3dLoading) {
+                console.log("model load has been superseded");
+                return;
+            }
+
             this.setupObj(obj, options);
             // if it is loading an old session, the animation field may not be there.
             this.setupAnimation(obj);
-            obj.updateMatrixWorld(true);
+            obj.updateMatrixWorld(true); // @@ not sure whose benefit this is for, given that obj isn't yet in the scene graph
 
             if (options.placeholder) {
                 console.log("delete collider for placeholder");
@@ -715,7 +724,19 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
                 this.cleanupColliderObject();
                 this.shape.remove(this.placeholder);
             }
-
+            if(options.flatten) {
+                let flattenedObj = this.flattenObj(obj);
+                if(flattenedObj !== obj) {
+                    obj.traverse((mesh) => {
+                        if (mesh.geometry){
+                            mesh.geometry.dispose();
+                            mesh.material.dispose();
+                        }
+                    });
+                    obj = flattenedObj;
+                }
+            }
+            addMeshProperties(obj, shadow, singleSided, noFog, THREE);
             if (this.actor.layers.indexOf('walk') >= 0) {
                 this.constructCollider(obj);
             }
@@ -724,12 +745,18 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
             // or collider incorporates shape transform
             this.shape.add(obj);
 
+            obj.updateMatrixWorld(true); // now sort out where everything is, before announcing model load
+
             if (name) {obj.name = name;}
 
             if (Array.isArray(obj.material)) {
                 obj.material.dispose = arrayDispose;
             }
+
+            delete this._model3dLoading;
             this.publish(this.id, "3dModelLoaded");
+        }).catch(_err => {
+            delete this._model3dLoading;
         });
     }
 
@@ -827,7 +854,7 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
 
         if (dataLocation) {
             return this.getBuffer(dataLocation).then((buffer) => {
-                assetManager.setCache(dataLocation, buffer, this.id);
+                 assetManager.setCache(dataLocation, buffer, this.id);
                 return assetManager.load(buffer, "svg", THREE, loadOptions);
             }).then((obj) => {
                 normalizeSVG(obj, depth, shadow, THREE);
@@ -845,6 +872,7 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
                 }
                 this.objectCreated(obj);
                 this.shape.add(obj);
+                this.publish(this.id, "2dModelLoaded");
             });
         } else {
             return texturePromise.then((textureObj) => {
@@ -874,8 +902,58 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
                 obj.name = "2d";
                 this.objectCreated(obj);
                 this.shape.add(obj);
+                this.publish(this.id, "2dModelLoaded");
             });
         }
+    }
+
+    // flattenObj does its best to remove groups and merge meshes with the same
+    // textures. It is used if the "flatten:" flag is set in the card.
+    // It is a poor man's mesh merge, so should not be used if the same texture is used
+    // in different kinds of materials (which is likely rare).
+    // It is quite similar to constructCollider and these could be merged at some point.
+    flattenObj(obj) {
+        let staticGroup = new THREE.Group();
+        let meshData = [];
+        let beforeCount = 0, endCount = 0;
+        try {
+            obj.traverse(c =>{
+                beforeCount++;
+                if(c.geometry){
+                    let cloned = c.geometry.clone();
+                    cloned.applyMatrix4(c.matrixWorld);
+                    if (cloned.index) {
+                        // this test may be dubious as some models can legitimately contain
+                        // non-indexed buffered geometry.
+                        if(cloned.attributes.uv2){
+                            // three.js doesn't support these
+                            delete cloned.attributes.uv2;
+                            delete cloned.attributes.texcoord_2;
+                        }
+                        let id = c.material.map ? c.material.map.id : 0;
+                        if (!meshData[id]) meshData[id] = {material: c.material.clone(), geometries:[]};
+                        meshData[id].geometries.push(cloned);
+                    } else {
+                        console.warn("skipping a geometry in the model that is not indexed");
+                    }
+                }
+            });
+
+            let BufferGeometryUtils = THREE.BufferGeometryUtils;
+            meshData.forEach(m=>{
+                endCount++;
+                let mergedGeometry = BufferGeometryUtils.mergeBufferGeometries( m.geometries, false);
+                let mesh = new THREE.Mesh(mergedGeometry, m.material);
+                staticGroup.add(mesh);
+            })
+
+        } catch (err) {
+            console.error("failed to build the static for:", obj);
+            console.error(err);
+            return obj;
+        }
+        console.log("Static - before:", beforeCount, "end:", endCount, "object:", obj);
+        return staticGroup;
     }
 
     constructCollider(obj) {
@@ -956,12 +1034,18 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
     }
 
     setupAnimation(obj) {
+        // There are a few ways to get here:
+        // -  the card is recently created, and animation loop has not been started.
+        // -  the card was here, and animation loop was on and showing different animations
+        //    and a new 3D model was just loaded.
+        // - a new model with an actor behavior that specifies animationClipIndex already.
+        // For the second case, animationRunning may be true.
         if (!obj._croquetAnimation) {return;}
 
         let spec = obj._croquetAnimation;
-        this.animationSpec = spec;
-        if (this.actor._cardData.animationClipIndex === undefined && spec.animations.length > 0) {
-            this.say("setAnimationClipIndex", 0); // use the first animation clip as default
+        if (spec) {
+            this.animationSpec = spec;
+            this.tryStartAnimation();
         }
     }
 
@@ -1053,8 +1137,10 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
         if (buffer) { return Promise.resolve(buffer); }
         if (!this.isDataId(name)) {
             return fetch(name)
-                .then((resp) => resp.arrayBuffer())
-                .then((arrayBuffer) => new Uint8Array(arrayBuffer));
+                .then((resp) => {
+                    if (!resp.ok) throw Error(`fetch failed: ${resp.status} ${resp.statusText}`);
+                    return resp.arrayBuffer();
+                }).then((arrayBuffer) => new Uint8Array(arrayBuffer))
         } else {
             let handle = Data.fromId(name);
             return Data.fetch(this.sessionId, handle);
@@ -1221,17 +1307,27 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
     }
 
     tryStartAnimation() {
-        if (this.actor._cardData.animationClipIndex !== undefined && !this.animationRunning) {
-            this.animationRunning = true;
-            this.runAnimation();
+        if (this.actor._cardData.animationClipIndex === undefined && this.animationSpec?.animations.length > 0) {
+            this.say("setAnimationClipIndex", 0);
+            // use the first animation clip as default. Some views may call this at the same time,
+            // but that should be okay
         }
+        this.runAnimation();
     }
 
     runAnimation() {
-        if (!this.animationRunning) {return;}
         let spec = this.animationSpec;
-        if (!spec) return;
-        this.future(50).runAnimation();
+        if (!spec) {
+            if (this.animationInterval) {
+                clearInterval(this.animationInterval);
+                this.animationInterval = null;
+            }
+            return;
+        }
+
+        if (!this.animationInterval) {
+            this.animationInterval = setInterval(() => this.runAnimation(), 50)
+        }
 
         let animationClipIndex = this.actor._cardData.animationClipIndex;
         if (animationClipIndex === undefined) {return;}
@@ -1267,40 +1363,120 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
     }
 
     selectEdit() {
-        this.say('selectEdit');
+        this.say("selectEdit");
     }
 
     unselectEdit() {
-        this.say('unselectEdit')
+        this.say("unselectEdit")
         delete this._plane;
     }
 
     doSelectEdit() {
+        this._editMode = true;
         console.log("doSelectEdit")
         if (this.renderObject) {
-            this.addWire(this.renderObject);
+            this.addWireBox(this.renderObject);
         }
     }
 
     doUnselectEdit() {
+        this._editMode = false;
         console.log("doUnselectEdit")
         if (this.renderObject) {
-            this.removeWire(this.renderObject);
+            this.removeWireBox(this.renderObject);
         }
     }
 
     nop() {}
 
-    addWire(obj3d) {
-        let parts = [];
-        let lines = [];
+    getMyAvatar() {
+        let playerManager = this.actor.service("PlayerManager");
+        let myAvatar = playerManager.players.get(this.viewId);
+        if (!myAvatar) {return undefined;}
+        return GetPawn(myAvatar.id);
+    }
 
+
+    addWireBox(obj3d) {
+        let tmpMat = new THREE.Matrix4();
+        let currentMat = obj3d.matrix;
+        let box;
+        try {
+            obj3d.matrix = tmpMat;
+            box = new THREE.Box3().setFromObject(obj3d);
+        } finally {
+            obj3d.matrix = currentMat;
+        }
+
+        let min = box.min;
+        let max = box.max;
+
+        let x = max.x - min.x;
+        let ax = (max.x + min.x) / 2;
+        let y = max.y - min.y;
+        let ay = (max.y + min.y) / 2;
+        let z = max.z - min.z;
+        let az = (max.z + min.z) / 2;
+
+        let cylinder = (len, rotateSel, tx, ty, tz) => {
+            let cyl = new THREE.CylinderGeometry(0.02, 0.02, len);
+            if (rotateSel) {
+                cyl[rotateSel](Math.PI / 2);
+            }
+            cyl.translate(tx, ty, tz);
+            return cyl;
+        };
+
+        let c0 =  cylinder(x, "rotateZ", ax, max.y * 1.01, max.z * 1.01);
+        let c1 =  cylinder(x, "rotateZ", ax, max.y * 1.01, min.z * 1.01);
+        let c2 =  cylinder(x, "rotateZ", ax, min.y * 1.01, max.z * 1.01);
+        let c3 =  cylinder(x, "rotateZ", ax, min.y * 1.01, min.z * 1.01);
+
+        let c4 =  cylinder(y, null,      max.x * 1.01, ay, max.z * 1.01);
+        let c5 =  cylinder(y, null,      max.x * 1.01, ay, min.z * 1.01);
+        let c6 =  cylinder(y, null,      min.x * 1.01, ay, max.z * 1.01);
+        let c7 =  cylinder(y, null,      min.x * 1.01, ay, min.z * 1.01);
+
+        let c8 =  cylinder(z, "rotateX", max.x * 1.01, max.y * 1.01, az);
+        let c9 =  cylinder(z, "rotateX", max.x * 1.01, min.y * 1.01, az);
+        let c10 = cylinder(z, "rotateX", min.x * 1.01, max.y * 1.01, az);
+        let c11 = cylinder(z, "rotateX", min.x * 1.01 , min.y * 1.01, az);
+
+        let cylinders = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11];
+
+        let BufferGeometryUtils = THREE.BufferGeometryUtils;
+        let mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(cylinders, false);
+
+        let mat = new THREE.MeshStandardMaterial({
+            color: 0xdddddd,
+            transparent: true,
+            opacity: 0.6,
+            depthTest: false,
+            depthWrite: false
+        });
+
+        let line = new THREE.Mesh(mergedGeometry, mat);
+        line._wireline = true;
+        line.renderOrder = 10000;
+        obj3d.add(line);
+    }
+
+    removeWireBox(obj3d) {
+        [...obj3d.children].forEach((c) => {
+            if (c._wireline) {
+                c.geometry.dispose();
+                c.material.dispose();
+                c.removeFromParent();
+            }
+        });
+    }
+
+    /*
+    showSelectEdit(obj3d) {
+        this.service("ThreeRenderManager").addToOutline(obj3d);
         obj3d.traverse((obj)=>{
             if(obj.geometry){
-                let edges = new THREE.EdgesGeometry(obj.geometry);
-                let line = new THREE.LineSegments( edges, new THREE.LineBasicMaterial( { color: 0x44ff44} ));
-                line.raycast = function(){};
-                lines.push(line);
+
                 let m = obj.material;
                 let mat;
                 if(Array.isArray(m))mat = m;
@@ -1312,24 +1488,23 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
                         m._oldColor = c;
                         let gray = (c.r * 0.299 + c.g * 0.587 + c.b * 0.114) * 0.50;
                         m.color = new THREE.Color(gray, gray, gray);
+                        m._oldOpacity = m.opacity;
+                        m.opacity = 0.5;
+                        m._oldTransparent = m.transparent;
+                        m.transparent = true;
+                        m.needsUpdate = true;
                     }
                 })
-                parts.push( obj );
             }
         });
-        for(let i = 0; i < lines.length; i++){
-            let line = lines[i];
-            line.type = '_lineHighlight';
-            parts[i].add(line);
-        }
     }
 
-    removeWire(obj3d) {
-        let lines = [];
+    showUnselectEdit(obj3d) {
+        this.service("ThreeRenderManager").clearOutline(obj3d);
         let mat;
         obj3d.traverse((obj)=>{
             if(obj.type === '_lineHighlight') {
-                lines.push(obj);
+                // lines.push(obj);
             } else if(obj.geometry) {
                 mat = (Array.isArray(obj.material)) ? obj.material : [obj.material];
                 mat.dispose = arrayDispose;
@@ -1337,18 +1512,17 @@ export class CardPawn extends mix(Pawn).with(PM_Smoothed, PM_ThreeVisible, PM_Po
                 mat.forEach(m=>{
                     if(m._oldColor) {
                         m.color = m._oldColor;
+                        m.opacity = m._oldOpacity;
+                        m.transparent = m._oldTransparent;
                         delete m._oldColor;
+                        delete m._oldOpacity;
+                        delete m._oldTransparent;
+                        m.needsUpdate = true;
                     }
                 });
             }
         });
-        for(let i = 0; i < lines.length;i++) {
-            let line = lines[i];
-            line.removeFromParent();
-            line.geometry.dispose();
-            line.material.dispose();
-        }
-    }
+    }*/
 
     saveCard(data) {
         if (data.viewId !== this.viewId) {return;}

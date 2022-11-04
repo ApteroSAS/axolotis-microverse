@@ -70,8 +70,7 @@ class ScrollAreaPawn {
         //console.log("target set");
         this.initializeClipping();
 
-        this.shape.children.forEach((c) => this.shape.remove(c));
-        this.shape.children = [];
+        [...this.shape.children].forEach((c) => this.shape.remove(c));
 
         let geometry = this.roundedCornerGeometry(
             this.actor._cardData.width,
@@ -121,7 +120,7 @@ class ScrollAreaPawn {
 
         let menu = [...pawn.children][0];
 
-        let planes = menu.call("Menu$MenuPawn", "computeClippingPlanes", [top, bottom, left, right]);
+        let planes = menu.call("Menu$MenuPawn", "menuComputeClippingPlanes", [top, bottom, left, right]);
         menu.material.clippingPlanes = planes;
 
         if (!pawn) {return;}

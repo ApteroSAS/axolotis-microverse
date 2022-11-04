@@ -6,7 +6,8 @@ import * as WorldcoreExports from "@croquet/worldcore-kernel";
 const {ViewService, ModelService, GetPawn, Model, Constants} = WorldcoreExports;
 
 import * as WorldcoreThreeExports from "./ThreeRender.js";
-import * as WorldcoreRapierExports from "./physics.js";
+import * as PhysicsExports from "./physics.js";
+import * as FrameExports from "./frame.js";
 
 //console.log(WorldcoreRapierExports);
 
@@ -17,17 +18,33 @@ function newProxy(object, handler, module, behavior) {
     }
     return new Proxy(object, {
         get(target, property) {
+            // Note to developers:
+            // You may be seeing this in the developer tool of the browser.
+            // Don't worry! You can press the "Step into" button several times to get to the
+            // "apply" line a few lines below. If you step into it, you will see the behavior
+            // method you are trying to get to.
             if (property === isProxy) {return true;}
             if (property === "_target") {return object;}
             if (property === "_behavior") {return behavior;}
             if (handler && handler.hasOwnProperty(property)) {
-                return new Proxy(handler[property], {
-                    apply: function(_target, thisArg, argumentList) {
-                        return handler[property].apply(thisArg, argumentList);
-                    }
-                });
+                // let behavior handler override the method / getter
+                const getter = Object.getOwnPropertyDescriptor(handler, property)?.get;
+                // use the card object as "this" in behavior getters
+                const handlerProp = getter ? getter.apply(object) : handler[property];
+                return handlerProp;
             }
             return target[property];
+        },
+        set(target, property, value) {
+            // let behavior handler override the method / getter
+            const setter = handler && handler.hasOwnProperty(property) && Object.getOwnPropertyDescriptor(handler, property)?.set;
+            if (setter) {
+                // use the card object as "this" in behavior setters
+                setter.apply(object, [value]);
+            } else {
+                target[property] = value;
+            }
+            return true;
         },
     });
 }
@@ -91,7 +108,7 @@ export const AM_Code = superclass => class extends superclass {
     future(time) {
         if (!this[isProxy]) {return super.future(time);}
         let behaviorName = this._behavior.$behaviorName;
-        let moduleName = this._behavior.module.name;
+        let moduleName = this._behavior.module.externalName;
         return this.futureWithBehavior(time, moduleName, behaviorName);
     }
 
@@ -142,7 +159,7 @@ export const AM_Code = superclass => class extends superclass {
 
         let behavior = this.behaviorManager.lookup(moduleName, behaviorName);
         if (!behavior) {
-            throw new Error(`epxander named ${behaviorName} not found`);
+            throw new Error(`behavior named ${behaviorName} not found`);
         }
 
         return behavior.invoke(this[isProxy] ? this._target : this, name, ...values);
@@ -185,7 +202,7 @@ export const AM_Code = superclass => class extends superclass {
         // listener can be:
         // this.func
         // name for a base object method
-        // name for an expander method
+        // name for a behavior method
         // string with "." for this module, a behavior and method name
         // // string with "$" and "." for external name of module, a behavior name, method name
 
@@ -374,7 +391,7 @@ export const PM_Code = superclass => class extends superclass {
 
         let behavior = this.actor.behaviorManager.lookup(moduleName, behaviorName);
         if (!behavior) {
-            throw new Error(`epxander named ${behaviorName} not found`);
+            throw new Error(`behavior named ${behaviorName} not found`);
         }
 
         return behavior.invoke(this[isProxy] ? this._target : this, name, ...values);
@@ -395,7 +412,7 @@ export const PM_Code = superclass => class extends superclass {
                 if (pawnBehaviors) {
                     for (let behavior of pawnBehaviors.values()) {
                         if (behavior.$behavior.teardown) {
-                            this.call(`${behavior.module.name}$${behavior.$behaviorName}`, "teardown");
+                            this.call(`${behavior.module.externalName}$${behavior.$behaviorName}`, "teardown");
                         }
                     };
                 }
@@ -546,6 +563,7 @@ export const PM_Code = superclass => class extends superclass {
     }
 
     removeUpdateRequest(array) {
+        if (!this.updateRequests) {return;}
         let index = this.updateRequests.findIndex((o) => o[0] === array[0] && o[1] === array[1]);
         if (index < 0) {return;}
         this.updateRequests.splice(index, 1);
@@ -564,6 +582,7 @@ class ScriptingBehavior extends Model {
         this.module = options.module;
         this.name = options.name;
         this.type = options.type;
+        this.location = options.location;
     }
 
     setCode(string) {
@@ -583,10 +602,10 @@ class ScriptingBehavior extends Model {
             source = trimmed;
         }
 
-        let code = `return (${source})`;
+        let code = `return (${source}) //# sourceURL=${window.location.origin}/behaviors_evaled/${this.location}/${this.name}`;
         let cls;
         try {
-            const Microverse = {...WorldcoreExports, ...WorldcoreThreeExports, ...WorldcoreRapierExports};
+            const Microverse = {...WorldcoreExports, ...WorldcoreThreeExports, ...PhysicsExports, ...FrameExports, RAPIER: PhysicsExports.Physics};
             cls = new Function("Worldcore", "Microverse", code)(Microverse, Microverse);
         } catch(error) {
             console.log("error occured while compiling:", source, error);
@@ -611,7 +630,7 @@ class ScriptingBehavior extends Model {
     ensureBehavior() {
         if (!this.$behavior) {
             let maybeCode = this.code;
-            this.setCode(maybeCode, true);
+            this.setCode(maybeCode);
         }
         return this.$behavior;
     }
@@ -625,13 +644,17 @@ class ScriptingBehavior extends Model {
 
         let proxy = newProxy(receiver, myHandler, module, this);
         try {
-            let f = proxy[name];
-            if (!f) {
+            let prop = proxy[name];
+            if (typeof prop === "undefined") {
                 throw new Error(`a method named ${name} not found in ${behaviorName || this}`);
             }
-            result = f.apply(proxy, values);
+            if (typeof prop === "function") {
+                result = prop.apply(proxy, values);
+            } else {
+                result = prop;
+            }
         } catch (e) {
-            console.error("an error occured in", behaviorName, name, e);
+            console.error(`an error occured in ${behaviorName}.${name}() on`, receiver, e);
         }
         return result;
     }
@@ -661,6 +684,14 @@ export class BehaviorModelManager extends ModelService {
     init(name) {
         super.init(name || "BehaviorModelManager");
 
+        this.cleanUp();
+
+        this.subscribe(this.id, "loadStart", "loadStart");
+        this.subscribe(this.id, "loadOne", "loadOne");
+        this.subscribe(this.id, "loadDone", "loadDone");
+    }
+
+    cleanUp() {
         this.moduleDefs = new Map(); // <externalName /* Bar1 */, {name /*Bar*/, actorBehaviors: Map<name, codestring>, pawnBehaviors: Map<name, codestring>, systemModule: boolean, location:string?}>
 
         this.modules = new Map(); // <externalName /* Bar1 */, {name /*Bar*/, actorBehaviors: Map<name, codestring>, pawnBehaviors: Map<name, codestring>, systemModule: boolean, location:string?}>
@@ -671,12 +702,7 @@ export class BehaviorModelManager extends ModelService {
         this.viewUses = new Map();  // {ScriptingBehavior [cardPawnId]}
 
         this.externalNames = new Map();
-
         this.loadCache = null;
-
-        this.subscribe(this.id, "loadStart", "loadStart");
-        this.subscribe(this.id, "loadOne", "loadOne");
-        this.subscribe(this.id, "loadDone", "loadDone");
     }
 
     createAvailableName(name, location) {
@@ -715,8 +741,17 @@ export class BehaviorModelManager extends ModelService {
         if (!externalName) {return null;}
         let module = this.modules.get(externalName);
         if (!module) {return null;}
-        return module.actorBehaviors.get(behaviorName)
-            || module.pawnBehaviors.get(behaviorName);
+        let b = module.actorBehaviors.get(behaviorName);
+        if (b) {
+            b.ensureBehavior();
+            return b;
+        }
+        b = module.pawnBehaviors.get(behaviorName);
+        if (b) {
+            b.ensureBehavior();
+            return b;
+        }
+        return null;
     }
 
     loadStart(key) {
@@ -780,7 +815,7 @@ export class BehaviorModelManager extends ModelService {
 
         codeArray.forEach((moduleDef) => {
             let {action, name, systemModule, location} = moduleDef;
-            if (location) {
+            if (location && !location.startsWith("(detached)")) {
                 let index = location.lastIndexOf("/");
                 let pathPart = location.slice(0, index);
                 if (userDir && !pathPart.startsWith(userDir) && !pathPart.startsWith(systemDir)) {
@@ -826,10 +861,15 @@ export class BehaviorModelManager extends ModelService {
                             let externalName = this.externalNames.get(`${location}$${moduleDef.name}`);
                             let behavior = this.lookup(externalName, behaviorName);
                             if (!behavior) {
+                                let cookedLocation = location;
+                                if (location.startsWith("(detached):")) {
+                                    cookedLocation = location.slice("(detached):".length);
+                                }
                                 behavior = ScriptingBehavior.create({
                                     systemBehavior: systemModule,
                                     module: module,
                                     name: behaviorName,
+                                    location: cookedLocation,
                                     type: behaviorType.slice(0, behaviorType.length - 1)
                                 });
                                 behavior.setCode(codeString);
@@ -898,7 +938,7 @@ export class BehaviorModelManager extends ModelService {
                     function randomString() {
                         return Math.floor(Math.random() * 36 ** 10).toString(36);
                     }
-                    newM.location = `${randomString()}/${randomString()}`;
+                    newM.location = `(detached):${randomString()}/${randomString()}`;
                 }
                 return [key, newM];
             });
@@ -971,12 +1011,25 @@ export class BehaviorViewManager extends ViewService {
         super(name || "BehaviorViewManager");
         this.url = null;
         this.socket = null;
-        window.BehaviorViewManager = this;
+        this.status = false;
         this.model = this.wellKnownModel("BehaviorModelManager");
         this.subscribe(this.model.id, "callViewSetupAll", "callViewSetupAll");
     }
 
-    setURL(url) {
+    isConnected() {
+        return this.socket && this.socket.readyState === WebSocket.OPEN && this.status === true;
+    }
+
+    destroy() {
+        if (this.callback) {
+            this.callback(false);
+        }
+        this.setURL(null);
+        super.destroy();
+    }
+
+    setURL(url, optCallback) {
+        this.callback = optCallback;
         if (this.socket) {
             try {
                 this.socket.onmessage = null;
@@ -989,6 +1042,24 @@ export class BehaviorViewManager extends ViewService {
         this.url = url;
         this.socket = new WebSocket(url);
         this.socket.onmessage = (event) => this.load(event.data);
+
+        this.socket.onopen = (_event) => {
+            console.log("connected");
+            this.status = true;
+            if (this.callback) {
+                this.callback(true);
+            }
+        };
+
+        this.socket.onclose = (_event) => {
+            console.log("disconnected");
+            this.socket.onmessage = null;
+            this.socket = null;
+            this.status = false;
+            if (this.callback) {
+                this.callback(false);
+            }
+        };
     }
 
     callViewSetupAll(pairs) {
@@ -1031,7 +1102,7 @@ export class BehaviorViewManager extends ViewService {
         let promises = [];
         let scripts = [];
 
-        if (!window._alLResolvers) {
+        if (!window._allResolvers) {
             window._allResolvers = new Map();
         }
 
@@ -1084,6 +1155,11 @@ if (map) {map.get("${id}")({data, key: ${key}, name: "${obj.name}"});}
                     let dot = obj.name.lastIndexOf(".");
                     let location = obj.name.slice(0, dot);
                     let isSystem = obj.name.startsWith("croquet");
+
+                    if (!obj || checkModule(obj.data)) {
+                        throw new Error("a behavior file does not export an array of modules");
+                    }
+
                     library.add(obj.data.default, location, isSystem);
                 });
 
@@ -1194,3 +1270,31 @@ export class CodeLibrary {
         this.modules.delete(path);
     }
 }
+
+export function checkModule(module) {
+    if (!module || !module.default || !module.default.modules) {
+        throw new Error("a behavior file does not export an array of modules");
+    }
+
+    let list = module.default.modules;
+    if (!Array.isArray(list)) {
+        throw new Error("a behavior file does not export an array of modules");
+    }
+    list.forEach((m) => {
+        let valid = true;
+        if (!m.name) {valid = false;}
+        if (m.actorBehaviors && !Array.isArray(m.actorBehaviors)) {valid = false;}
+        if (m.pawnBehaviors && !Array.isArray(m.pawnBehaviors)) {valid = false;}
+        let keys = {...m};
+        delete keys.name;
+        delete keys.actorBehaviors;
+        delete keys.pawnBehaviors;
+        if (Object.keys(keys).length > 0) {
+            valid = false;
+        }
+        if (!valid) {
+            throw new Error("a behavior file exports a malformed behavior module");
+        }
+    });
+}
+

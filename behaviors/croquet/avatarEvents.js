@@ -30,35 +30,6 @@ class AvatarPawn {
         this.addEventListener("keyUp", this.keyUp);
     }
 
-    startMotion(dx, dy) {
-        this.spin = Microverse.q_identity();
-        this.velocity = Microverse.v3_zero();
-        this.say("startFalling");
-        if (dx || dy) this.updateMotion(dx, dy);
-    }
-
-    endMotion(_dx, _dy) {
-        this.activeMMotion = false;
-        this.spin = Microverse.q_identity();
-        this.velocity = Microverse.v3_zero();
-    }
-
-    updateMotion(dx, dy) {
-        const JOYSTICK_V = 0.000030;
-        const MAX_V = 0.015;
-        const MAX_SPIN = 0.0004;
-
-        let v = dy * JOYSTICK_V;
-        v = Math.min(Math.max(v, -MAX_V), MAX_V);
-
-        const yaw = dx * (this.isMobile ? -2.5 * MAX_SPIN : -MAX_SPIN);
-        this.spin = Microverse.q_euler(0, yaw ,0);
-        this.velocity = [0, 0, v];
-        this.maybeLeavePresentation();
-    }
-
-    handlingEvent(_type, _target, _event) {}
-
     teardown() {
         if (!this.isMyPlayerPawn) {return;}
         console.log("avatar event handler detached");
@@ -91,11 +62,66 @@ class AvatarPawn {
     }
 }
 
+export class WalkerPawn {
+    walkTerrain(vq) {
+        let walkLayer = this.service("ThreeRenderManager").threeLayer("walk");
+        if (!walkLayer) return vq;
+
+        let collideList = walkLayer.filter(obj => obj.collider);
+        if (collideList.length === 0) {return vq;}
+        return this.collideBVH(collideList, vq);
+    }
+
+    checkPortal(vq, _time, _delta) {
+        let collided = this.collidePortal(vq);
+        return [vq, collided];
+    }
+
+    checkFall(vq, _time, _delta) {
+        if (!this.isFalling) {return [vq, false];}
+        let v = vq.v;
+        v = [v[0], v[1] - this.fallDistance, v[2]];
+        this.isFalling = false;
+        if (v[1] < this.maxFall) {
+            this.goHome();
+            return [{v: [0, 0, 0], q: [0, 0, 0, 1]}, true];
+        }
+        return [{v: v, q: vq.q}, false];
+    }
+
+    backoutFromFall(vq, _time, _delta) {
+        if (!this.checkFloor(vq)) {
+            // if the new position leads to a position where there is no walkable floor below
+            // it tries to move the avatar the opposite side of the previous good position.
+            vq.v = Microverse.v3_lerp(this.lastCollideTranslation, vq.v, -1);
+        } else {
+            this.lastCollideTranslation = vq.v;
+        }
+        return [vq, false];
+    }
+
+    bvh(vq, time, _delta) {
+        let collide_throttle = this.collide_throttle || 50;
+
+        if ((this.actor.fall || this.spectator) && time - this.lastCollideTime > collide_throttle) {
+            this.lastCollideTime = time;
+            let result = this.checkFall(vq);
+            if (result[1]) {return result;}
+            vq = this.walkTerrain(result[0]);
+        }
+        return [vq, false];
+    }
+}
+
 export default {
     modules: [
         {
             name: "AvatarEventHandler",
             pawnBehaviors: [AvatarPawn],
+        },
+        {
+            name: "BuiltinWalker",
+            pawnBehaviors: [WalkerPawn],
         }
     ]
 }

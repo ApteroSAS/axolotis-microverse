@@ -13,7 +13,15 @@ const config = {
     output: {
         path: path.join(__dirname, 'dist'),
         filename: 'lib/[name]-[contenthash:8].js',
-        chunkFilename: 'lib/chunk-[name]-[contenthash:8].js',
+        chunkFilename: (pathData) => {
+            let name = pathData.chunk.id;
+            if (typeof name === "number") name = "chunk"; // production mode
+            name = name.replace(/(src_|_js)/g, '');
+            if (name === 'vendors-node_modules_croquet_worldcore-kernel_Mixins') name = "worldcore";
+            if (name === 'vendors-node_modules_dimforge_rapier3d_rapier') name = "rapier3d";
+            if (name === 'wonderland_croquet_libraries_packages_croquet_cjs_croquet-croquet') name = "croquet";
+            if (name.includes('node_modules')) name = "misc";
+        },
         webassemblyModuleFilename: "lib/[modulehash].wasm",
         clean: true
     },
@@ -42,7 +50,6 @@ const config = {
     },
     plugins: [
         new HtmlWebpackPlugin({
-            template: './src/page/index.html',   // input
             filename: 'index.html',   // output filename in dist/
             minify: false,
             chunks: ['index']
@@ -64,18 +71,15 @@ const config = {
         }),
         new CopyPlugin({
             patterns: [
-                { from: 'assets/3D/*'},
                 { from: 'assets/SVG/*'},
                 { from: 'assets/avatars/*'},
                 { from: 'assets/css/*'},
-                { from: 'assets/fonts/**/*'},
                 { from: 'assets/images/*'},
                 { from: 'assets/sky/*'},
                 { from: 'worlds/*.{js,vrse}'},
                 { from: 'meta/version.txt', to: 'meta/version.txt'},
-                { from: 'behaviors/**/*'}
+                { from: 'apiKey-dev.js', noErrorOnMissing: true },
             ]
-        }),
     ],
 };
 
@@ -110,7 +114,6 @@ module.exports = (env, argv) => {
         config.plugins.push(
             new CopyPlugin({
                 patterns: [
-                    { from: 'apiKey.js', to: 'apiKey.js', noErrorOnMissing: true },
                 ]
             })
         );
