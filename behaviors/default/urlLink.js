@@ -14,7 +14,7 @@ class URLPawn {
     tap() {
         console.log("Did I tap tap tap tap?");
         let div = document.createElement("div");
-        let url = this.actor._cardData.cardURL || "https://croquet.io"; // default to Croquet
+        let url = this.actor._cardData.cardURL || "https://aptero.co"; // default to Croquet
         console.log(url);
         div.innerHTML = `<a id="link" target="_blank" rel="noopener noreferrer" href="${url}"></a>`;
         let a = div.querySelector("#link");
